@@ -31,13 +31,19 @@ def make_regression(data, color, plot = False):
         plt.show()
     return model
 
-def model_func(model):
+def model_slope(model):
+    '''
+    Get slope of model
+    '''
+    a = model.predict([[0]]).tolist()[0][0]
+    b = model.predict([[1]]).tolist()[0][0]
+    slope = b - a
+
+    return slope
+
+def model_func(slope):
     '''
     extract line equation from sklearn linear regression
     '''
-    # Slope of line is rise / run, run = 1
-    b = model.predict([[0]]).tolist()[0][0]
-    m = model.predict([[1]]).tolist()[0][0] - b
-
-    # Return line with no intercept - assumes data is centered on mean
-    return lambda x: m * x
+    # Return line with no intercept
+    return lambda x: slope * x

@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-from calibration_functions import make_regression, model_func
+from numpy import savetxt
+from calibration_functions import *
 
 ## Load calibration data
 # Name of file with calibration data
@@ -20,10 +21,24 @@ cal_data = pd.read_csv(
 
 # Make sklearn linear model
 yellow_model = make_regression(cal_data, "yellow")
-red_model = make_regression(cal_data, "red")
 blue_model = make_regression(cal_data, "blue")
+red_model = make_regression(cal_data, "red")
 
-# Save linear model as lambda function
-yellow_func = model_func(yellow_model)
-blue_func = model_func(blue_model)
-red_func = model_func(red_model)
+# Calculate slope from this linearization
+yellow_slope = model_slope(yellow_model)
+blue_slope = model_slope(blue_model)
+red_slope = model_slope(red_model)
+
+# Save slopes as list
+slopes = [yellow_slope, blue_slope, red_slope]
+
+# Manually enter wave gauge locations in order increasing towards paddle
+x_locs = [0, 3.8, 5.84]
+
+# Save data in standard layout as csv
+    # [0, :] -> calibration curve slopes
+    # [1, :] -> locations
+cal_data = np.array([slopes, x_locs])
+savetxt('calibration/calibration.csv', cal_data, delimiter = ',')
+
+# print(cal_data)
