@@ -4,8 +4,9 @@ function [w] = freq_range(eta_obs, fs, c, n, method)
 % c - cutoff threshold for energy container
 % n - number of frequencies to return
 % method -
-    % 0 uses regular linear spacing
-    % 1 creates higher density spacing near values of importance
+    % [any except 11] uses spacing calculated with curve fit to cumtrapz
+    % for psd
+    % 11 uses unvalidated method
 
 % Evaluate spectral density using Welch method
 % window = length(eta_obs) -> # of windows used in Welch method,
