@@ -27,7 +27,7 @@ c = 0.01;
 n = 30;
 g = 9.81;
 
-[w_n, k_n, m0] = freq_range(eta_obs, fs, c, n);
+[w_n, k_n] = freq_range(eta_obs, fs, c, n);
 
 
 figure

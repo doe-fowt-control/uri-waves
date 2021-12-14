@@ -1,4 +1,4 @@
-function [w, k, m0] = freq_range(eta_obs, fs, c, n)
+function [w, k] = freq_range(eta_obs, fs, c, n)
 % fs - sampling frequency
 % eta_obs - raw observations
 % c - cutoff threshold for energy container
@@ -13,9 +13,6 @@ function [w, k, m0] = freq_range(eta_obs, fs, c, n)
 
 % Calculate PSD
 [pxx, f] = pwelch(eta_obs(:, 1), 1024, [],[], fs);
-
-% zero-th moment as area under power curve
-m0 = trapz(f, pxx);
 
 % Find where power is greater than some cutoff
 thresh = pxx > max(pxx)*c;

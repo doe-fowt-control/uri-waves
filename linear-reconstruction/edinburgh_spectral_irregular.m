@@ -41,7 +41,7 @@ nx = 6; % number of spatial points -> choose 6 to use all wave gauges
 
 
 n1 = 30;
-[w_n1, k_n1, m01] = freq_range(eta_obs, fs, c, n1);
+[w_n1, k_n1] = freq_range(eta_obs, fs, c, n1);
 
 nt = 3000; % number of temporal points -> 3000 uses 30s data for reconstruction
 [a_n_13, b_n_13] = linear_weights_sampled(eta_obs, X, T, nx, nt, k_n1);
@@ -54,7 +54,7 @@ nt = 5000; % number of temporal points -> 5000 uses 50s data for reconstruction
 slice15 = reconstruct_slice(x, t, k_n1, w_n1, a_n_15, b_n_15, 't', 1);
 
 n2 = 50;
-[w_n2, k_n2, m02] = freq_range(eta_obs, fs, c, n2);
+[w_n2, k_n2] = freq_range(eta_obs, fs, c, n2);
 
 nt = 3000; % number of temporal points -> 3000 uses 30s data for reconstruction
 [a_n_23, b_n_23] = linear_weights_sampled(eta_obs, X, T, nx, nt, k_n2);
