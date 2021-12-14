@@ -20,8 +20,8 @@ eta_obs = eta_obs - mean(eta_obs);
 [X, T] = meshgrid(x, t);
 
 % % Specify wavenumbers for reconstruction using one of a few methods, actual -> 2.2081
-% k_n = 2.2081;
-% k_n = [2.1581, 2.2081, 2.2581];
+k_n = 2.2081;
+k_n = [2.1581, 2.2081, 2.2581];
 k_n = linspace(2.1981, 2.2181, 20);
 
 % Specify corresponding frequencies using deepwater dispersion relation
@@ -56,4 +56,38 @@ ylabel("Height (m)")
 
 
 
+%%
+
+fs = 1/((t(end)-t(1))/numel(t));
+% [pxx, f] = pwelch(eta_obs(:, 1), 5000, 500, 5000, fs);
+
+[pxx, f] = pwelch(eta_obs(:, 1), length(eta_obs), [],[], fs);
+% [pxx, f] = pwelch(eta_obs, length(eta_obs), [], [], fs);
+plot(f, pxx);
+xlim([0 1]);
+
+% cut off frequencies with less than one percent of the energy
+c = 0.01;
+thresh = pxx > max(pxx)*c;
+
+frel = f(thresh);
+lo = min(frel);
+hi = max(frel);
+
+w = linspace(lo, hi, n);
+
+smallest_change = (hi-lo)./(3*n);
+size_norm = pxx(thresh)/max(pxx(thresh)); % large value for frequencies of importance
+increment = smallest_change.*(1./size_norm); 
+
+j = 1;
+fdist = [lo];
+for i = 1:length(frel)-1
+    while fdist(j) < frel(i+1)
+        fdist(j+1) = fdist(j) + increment(i);
+        j = j+1;
+    end
+end
+
+% (2*pi.*w).^2./g
 

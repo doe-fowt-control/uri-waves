@@ -17,32 +17,22 @@ eta_obs = data(t_lo:t_hi, :);
 % Center on mean
 eta_obs = eta_obs - mean(eta_obs);
 
+% Create spatiotemporal instances
 [X, T] = meshgrid(x, t);
 
+% sampling rate
 fs = 1/((t(end)-t(1))/numel(t));
-c = 0.005;
-n = 20;
+
+c = 0.01;
+n = 30;
 g = 9.81;
 
-w_n = freq_range(eta_obs, fs, c, n);
-k_n = w_n.^2./g;
+[w_n, k_n, m0] = freq_range(eta_obs, fs, c, n);
 
-% % % Specify wavenumbers for reconstruction using one of a few methods, actual -> 2.2081
-% k_n = 2.2081;
-% k_n = [2.1581, 2.2081, 2.2581];
-% k_n = linspace(2.1981, 2.2181, 20);
-% 
-% % Specify corresponding frequencies using deepwater dispersion relation
-% n = length(k_n);
-% g = 9.81;
-% w_n = sqrt(g.*k_n);
-
-% % This is a vector which could be used to visualize reconstruction in space
-% x_test = linspace(min(x), max(x));
 
 figure
 nx = 6; % number of spatial points -> choose 6 to use all wave gauges
-nt = 3000; % number of temporal points -> 3000 uses 30s data for reconstruction
+nt = 4000; % number of temporal points -> 3000 uses 30s data for reconstruction
 [a_n_1, b_n_1] = linear_weights_sampled(eta_obs, X, T, nx, nt, k_n);
 
 % Use weights to make reconstruction
