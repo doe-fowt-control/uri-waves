@@ -4,18 +4,8 @@ clear
 load '../data/12.1.21/data.mat'
 load '../data/12.1.21/time.mat'
 
-
-%%
 t_lo = 5000;
 t_hi = 15000;
-
-% does it make sense to select this time window before doing anything else?
-% It seems kinda wierd... especially because we end up sub-selecting the
-% data using linear_weights_sampled
-
-
-% Should
-
 t = time(t_lo:t_hi, 1);
 
 % Specify locations
