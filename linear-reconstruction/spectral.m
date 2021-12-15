@@ -9,6 +9,10 @@ function [m0, h_m0, h_var, pperiod] = spectral(eta_obs, fs)
 
 % Calculate PSD
 [pxx, f] = pwelch(eta_obs(:, 1), 1024, [],[], fs);
+figure()
+    plot(f,pxx)
+    title('Wave Energy Spectrum')
+    set(gcf,'color','w');
 
 % peak period
 pperiod = f(pxx == max(pxx));
