@@ -15,7 +15,7 @@ figure()
     set(gcf,'color','w');
 
 % peak period
-pperiod = f(pxx == max(pxx));
+pperiod = 1/(f(pxx == max(pxx)));
 
 % zero-th moment as area under power curve
 m0 = trapz(f, pxx);
