@@ -11,6 +11,9 @@ fs_old = round(1/((time(end)-time(1))/numel(time)), 0);
 data = data(time_start * fs_old : time_end * fs_old, :);
 time = time(time_start * fs_old : time_end * fs_old);
 
+% bring time back to start at zero
+time = time - time(1);
+
 % center on mean
 data = data - mean(data);
 

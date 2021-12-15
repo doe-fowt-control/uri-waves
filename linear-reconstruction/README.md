@@ -15,6 +15,7 @@ The four scripts, `edinburgh6.m`, `edinburgh6_spectral.m`, `edinburgh_spectral_i
     `linear_full.m` : slightly refined version which allows you to perform reconstruction and propagation as they would be done during actual operation
 
 Description of functions:
+    `doo.m` : wrapper for other functions, makes code easier to run iteratively in `linear_full.m`
     `freq_range.m` : calculated a specified number of frequencies and wavenumbers (deep water) based on sampled spectrum
     `H_sig.m` : find significant wave height using zero-upcrossing method
     `linear_weights.m` : calculates linear weights for reconstruction using linear regression methods. Uses a subset of time samples
