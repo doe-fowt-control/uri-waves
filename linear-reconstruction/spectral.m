@@ -1,4 +1,4 @@
-function [m0, h_m0, h_var, pperiod] = spectral(eta_obs, fs)
+function [stat] = spectral(eta_obs, fs)
 % fs - sampling frequency
 % eta_obs - raw observations
 
@@ -26,6 +26,7 @@ h_m0 = 4*sqrt(m0);
 
 % signicifant wave height from variance averaged over each wave guage
 h_var = 4*sqrt(mean(var(eta_obs)));
+
 
 
 end
