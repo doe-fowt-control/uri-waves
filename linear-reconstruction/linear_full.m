@@ -1,8 +1,8 @@
 %% Load data
 clear
 
-% load '../data/12.10.21/dataD.mat'
-load '../data/1.10.22/dataA.mat'
+% load '../data/mat/12.10.21/D.mat'
+load '../data/mat/1.10.22/A.mat'
     % time as `time`
     % wave gauge data as `data`
     % wave guage locations as `x`
@@ -11,23 +11,24 @@ load '../data/1.10.22/dataA.mat'
 t_lo = 0;
 t_hi = 'end';
 
-% desired sampling frequency (Hz)
-fs = 32;
+param = struct;
+param.fs = 32; % sampling frequency
+param.tr = 90; % reconstruction time
+param.Ta = 15; % reconstruction assimilation time
+param.ts = 15; % spectral assimilation time
+param.nf = 30; % number of frequencies used for reconstruction
+param.mu = 0.05; % cutoff threshold
+param.window = []; % pwelch window
+param.noverlap = []; % pwelch noverlap
+param.nfft = []; % pwelch nfft
 
 % Preprocess to get spatiotemporal points and resampled observations
-[X, T, eta_obs] = preprocess(data, time, x, fs, t_lo, t_hi);
+[X, T, eta_obs] = preprocess(data, time, x, param.fs, t_lo, t_hi);
 
-predict_time = 90; % prediction time in seconds
-predict_gauge = 7; % gauge to predict at
-np = 12; % number of periods to predict for
+predict_gauge = 7;  % gauge to predict at
+np = 12;            % number of periods to predict for
 
-t1 = 15;
-% t2 = 17.5;
-% t3 = 20;
-
-[slice1, t_reconstruct, stat] = linear_wrapper(t1, predict_time, predict_gauge, np, x, fs, X, T, eta_obs);
-% slice2 = doo(t2, predict_time, predict_gauge, np, x, fs, X, T, eta_obs);
-% slice3 = doo(t3, predict_time, predict_gauge, np, x, fs, X, T, eta_obs);
+[slice1, t_reconstruct, stat] = linear_wrapper(param, predict_gauge, np, x, X, T, eta_obs);
 
 pperiod = stat.pperiod;
 
@@ -39,17 +40,14 @@ xlabel('t/Tp')
 ylabel('Amplitude (m)')
 
 % Generate time series for visualizing the reconstruction
-t_vis = (t_reconstruct - predict_time)/pperiod;
+t_vis = (t_reconstruct - param.tr)/pperiod;
 plot(t_vis, slice1, 'blue')
-% plot(t_vis, slice2, 'blue')
-% plot(t_vis, slice3, 'green')
 
 % shift measured time series back to zero for visualization
-plot((T(:, 1) - predict_time)/pperiod, eta_obs(:, predict_gauge), 'LineWidth', 3, 'Color', [0,0,0,0.2])
+plot((T(:, 1) - param.tr)/pperiod, eta_obs(:, predict_gauge), 'LineWidth', 3, 'Color', [0,0,0,0.2])
 
 xline(0, 'k--')
-% xline(predict_time + pperiod, 'k--')
-% xline(predict_time + pperiod * 2, 'k--')
+
 
 xlim([-2*pperiod (np-2)*pperiod])
 ylim([-0.05 0.05])
