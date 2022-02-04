@@ -15,16 +15,16 @@ t_lo = 0;
 t_hi = 'end';
 
 param = struct;
-param.fs = 32; % sampling frequency
-param.tr = 60; % reconstruction time
-param.Ta = 15; % reconstruction assimilation time
-param.ts = 30; % spectral assimilation time
-param.nf = 30; % number of frequencies used for reconstruction
-param.mu = .05; % cutoff threshold
-param.window = []; % pwelch window
-param.noverlap = []; % pwelch noverlap
-param.nfft = 1024; % pwelch nfft
-param.noise = pxxn;
+param.fs = 32;          % sampling frequency
+param.tr = 60;          % reconstruction time
+param.Ta = 15;          % reconstruction assimilation time
+param.ts = 30;          % spectral assimilation time
+param.nf = 30;          % number of frequencies used for reconstruction
+param.mu = .05;         % cutoff threshold
+param.window = [];      % pwelch window
+param.noverlap = [];    % pwelch noverlap
+param.nfft = 1024;      % pwelch nfft
+param.noise = pxxn;     % example of noisy signal
 
 % Preprocess to get spatiotemporal points and resampled observations
 [X, T, eta_obs] = preprocess(data, time, x, param.fs, t_lo, t_hi);
