@@ -15,7 +15,7 @@ nf = param.nf;
 
 % Set pwelch parameters
 window = param.window;
-noverlap = param.window;
+noverlap = param.noverlap;
 nfft = param.nfft;
 
 % Calculate once to determine length
@@ -36,15 +36,19 @@ end
 pxx = mean(pxxt, 2);
 
 [w,k] = get_freqs(mu, nf, pxx, f);
-[w1, k1] = get_freqs(mu, nf, pxxt(1,:), f);
-[w6, k6] = get_freqs(mu, nf, pxxt(6,:), f);
+[w1, k1] = get_freqs(mu, nf, pxxt(:,1), f);
+[w6, k6] = get_freqs(mu, nf, pxxt(:,6), f);
 
 % Calculate key wave statistics, store them as a structure called stat
 stat = struct;
 
+stat.w_hi_avg = max(w);
+stat.w_lo_avg = min(w);
+
 % high and low frequencies
-stat.w_hi = max(w6);
-stat.w_lo = min(w1);
+stat.w_hi_pred = max(w6);
+stat.w_lo_pred = min(w1);
+% stat.w_lo_pred = w(5);
 
 % peak period
 pperiod = 1/(f(pxx == max(pxx)));
@@ -62,13 +66,13 @@ stat.h_m0 = h_m0;
 figure
 hold on
 title('Wave Energy Spectrum and Targeted Frequencies')
-xlabel('Frequency (Hz)')
-ylabel('Power Density (m^2/Hz)')
+xlabel('Frequency (rad/s)')
+ylabel('Power Density (m^2/rad/s)')
 
-plot(f, pxx)
-plot(w/2/pi, max(pxx)/2*ones(length(w)), 'kx')
-xlim([0 max(w/2/pi) * 1.1])
-legend('PSD', 'Target Frequencies')
+plot(f*2*pi, pxx)
+plot(w, max(pxx)/2*ones(length(w)), 'kx')
+xlim([0 max(w) * 1.1])
+legend('PSD', 'Target Frequency')
 
 
 function [w, k] = get_freqs(c, n, pxx, f)

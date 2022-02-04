@@ -1,11 +1,14 @@
 %% Load data
 clear
 
-% load '../data/mat/12.10.21/D.mat'
-load '../data/mat/1.10.22/A.mat'
+load '../data/mat/12.10.21/D.mat'
+% load '../data/mat/1.10.22/A.mat'
     % time as `time`
     % wave gauge data as `data`
     % wave guage locations as `x`
+
+load '../data/noise.mat'
+    % pxxn length 513
 
 % time limit for good data
 t_lo = 0;
@@ -13,14 +16,15 @@ t_hi = 'end';
 
 param = struct;
 param.fs = 32; % sampling frequency
-param.tr = 90; % reconstruction time
+param.tr = 60; % reconstruction time
 param.Ta = 15; % reconstruction assimilation time
-param.ts = 15; % spectral assimilation time
+param.ts = 30; % spectral assimilation time
 param.nf = 30; % number of frequencies used for reconstruction
-param.mu = 0.05; % cutoff threshold
+param.mu = .05; % cutoff threshold
 param.window = []; % pwelch window
 param.noverlap = []; % pwelch noverlap
-param.nfft = []; % pwelch nfft
+param.nfft = 1024; % pwelch nfft
+param.noise = pxxn;
 
 % Preprocess to get spatiotemporal points and resampled observations
 [X, T, eta_obs] = preprocess(data, time, x, param.fs, t_lo, t_hi);
@@ -33,44 +37,52 @@ np = 12;            % number of periods to predict for
 pperiod = stat.pperiod;
 
 figure
+subplot(2,1,1)
 hold on
 
-title('Comparison of propagated and measured wave')
-xlabel('t/Tp')
-ylabel('Amplitude (m)')
+title('a) Comparison of propagated and measured wave')
+xlabel('t / T_{p}')
+ylabel('h / H_{s}')
 
 % Generate time series for visualizing the reconstruction
 t_vis = (t_reconstruct - param.tr)/pperiod;
-plot(t_vis, slice1, 'blue')
+plot(t_vis, slice1 / stat.h_m0, 'blue')
 
 % shift measured time series back to zero for visualization
-plot((T(:, 1) - param.tr)/pperiod, eta_obs(:, predict_gauge), 'LineWidth', 3, 'Color', [0,0,0,0.2])
+plot((T(:, 1) - param.tr)/pperiod, eta_obs(:, predict_gauge) / stat.h_m0, 'LineWidth', 3, 'Color', [0,0,0,0.2])
 
-xline(0, 'k--')
+% plot prediction zone boundaries
+xline(stat.zone_lo, '-.', 'linewidth', 3)
 
+% plot prediction time
+xline(0, 'r--', 'linewidth', 1)
+
+xline(stat.zone_hi, '-.', 'linewidth', 3)
 
 xlim([-2*pperiod (np-2)*pperiod])
-ylim([-0.05 0.05])
+ylim([-1 1])
 
-xline(stat.zone_lo, 'linewidth', 3)
-xline(stat.zone_hi, 'linewidth', 3)
-
-legend('propagated','measured');
+legend('Propagated', 'Measured', 'Calculated prediction zone boundary', 'Reconstruction time', 'location', 'northwest');
 
 % legend(strcat(num2str(t1), 's input'))
 %        strcat(num2str(t2), 's input'), ...
 %        strcat(num2str(t3), 's input'))
 
 
-% clf;
-% hold on
-% plot(time/pperiod, (data(:,1) - mean(data(:,1)))/stat.h_m0, 'Color', [0,0,0,0.7]);
-% xline(5/pperiod, 'r--')
-% xline(5/pperiod + 200, 'r--')
-% xlim([0, 300]);
-% xlabel('t/Tp');
-% ylabel('h/Hs');
-% title('Example time series of full wave generation process');
+subplot(2,1,2)
+hold on
+plot(time/pperiod, (data(:,1) - mean(data(:,1)))/stat.h_m0, 'Color', [0,0,0,0.7]);
+xline(5/pperiod, 'k-.') % wavemaker on
+xline(param.tr/pperiod, 'r--', 'LineWidth', 1) % reconstruction time
+rectangle('Position', [(param.tr/pperiod)-2, -1, (np-2), 2], 'FaceColor', [.1 .1 .1 .1], 'EdgeColor', 'none')
+xline(5/pperiod + 200, 'k-.')
+
+legend('Raw time series', 'Wavemaker on/off', 'Reconstruction time')
+xlim([0, 300]);
+ylim([-1 1])
+xlabel('t / T_{p}');
+ylabel('h / H_{s}');
+title('b) Full time series of waves at gauge 1 with reconstruction window for a)');
 
 
 

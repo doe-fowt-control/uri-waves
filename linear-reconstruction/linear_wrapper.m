@@ -32,8 +32,8 @@ x_b = min(locs);
 x_j = max(locs);
 x_p = x(predict_gauge);
 
-c_g1 = w(1) / (2*k(1));
-c_g2 = w(end) / (2*k(end));
+c_g1 = 9.81 / (2 * stat.w_lo_pred);
+c_g2 = 9.81 / (2 * stat.w_hi_pred);
 
 stat.c_g1 = c_g1;
 stat.c_g2 = c_g2;
