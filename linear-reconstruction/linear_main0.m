@@ -13,7 +13,7 @@ load '../data/noise.mat'
     % pxxn length 513
 
 param = struct;
-param.fs = 8;           % sampling frequency
+param.fs = 32;          % sampling frequency
 param.tr = 71;          % reconstruction time
 param.Ta = 15;          % reconstruction assimilation time
 param.nf = 30;          % number of frequencies used for reconstruction

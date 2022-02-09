@@ -1,4 +1,4 @@
-function [w, k, stat] = freq_range(param, eta_obs)
+function [w, k, stat] = freq_range(param, eta)
 % eta_obs - raw observations
 % param - parameters defined in linear_full.m
 
@@ -19,9 +19,9 @@ noverlap = param.noverlap;
 nfft = param.nfft;
 
 % Calculate once to determine length
-pxx1 = pwelch(eta_obs(:, 1), window, noverlap, nfft, fs);
+pxx1 = pwelch(eta(:, 1), window, noverlap, nfft, fs);
 
-nx = size(eta_obs, 2); % Number of wave gauges
+nx = size(eta, 2); % Number of wave gauges
 npxx = length(pxx1); % Number of psd points
 
 % Make empty array for averaging, append first psd
@@ -30,7 +30,7 @@ pxxt(:, 1) = pxx1;
 
 % Iterate through remaining wave gauges, average all
 for g = 2:1:nx
-    [pxxt(:, g), f] = pwelch(eta_obs(:, g), window, noverlap, nfft, fs);
+    [pxxt(:, g), f] = pwelch(eta(:, g), window, noverlap, nfft, fs);
 end
 
 pxx = mean(pxxt, 2);

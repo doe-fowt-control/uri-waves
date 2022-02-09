@@ -1,9 +1,12 @@
 clear
+
+addpath '/Users/shawnalbertson/Documents/Research/uri-waves/linear-reconstruction/functions'
+
 load '../data/mat/1.10.22/A.mat'
 
 % Calculate prediction zone using one probe and fourier transform
 
-i1 = 4;
+i1 = 3;
 i2 = 1;
 
 p1 = data(:,i1);
@@ -11,7 +14,7 @@ p2 = data(:,i2);
 
 fs = round(1/((time(end)-time(1))/numel(time)),0);
 
-t1 = 61;            % initial time (s)
+t1 = 60;            % initial time (s)
 t = 15;             % assimilation time (s)
 L = t*fs;           % length of signal
 
@@ -19,7 +22,7 @@ f = fs*(0:(L/2))/L; % frequencies (Hz)
 
 % get sample time series
 t_sample = time(t1*fs:(t1+t)*fs);
-p1_sample = p1(t1*fs: (t1+t)*fs);
+p1_sample = p1(t1*fs:(t1+t)*fs);
 
 Y = fft(p1_sample); % calculate fft
 a = abs(Y/L);       % magnitude of output divided by length of signal
