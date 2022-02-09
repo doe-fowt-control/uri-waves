@@ -1,6 +1,6 @@
 %% Shawn Albertson
-% Original date: 2/9/21
-% Last updated: 2/9/21
+% Published: 2/9/21
+% Updated:   2/9/21
 
 % Perform reconstruction using a single probe worth of data and FFT
 % Evaluate the error between the wave propagation and measurement
@@ -10,18 +10,20 @@ clear
 addpath '/Users/shawnalbertson/Documents/Research/uri-waves/linear-reconstruction/functions'
 
 load '../data/mat/1.10.22/A.mat'
+% load '../data/mat/12.10.21/D.mat'
 
 param = struct;
-param.fs = 64;          % sampling frequency
+param.fs = 32;          % sampling frequency
 param.tr = 60;          % reconstruction time
 param.Ta = 15;          % reconstruction assimilation time
 param.nf = 20;          % number of frequencies used for reconstruction
-param.mu = .03;         % cutoff threshold
-param.mg = 2;         % measurement gauges
+param.mu = .05;         % cutoff threshold
+param.mg = 2;           % measurement gauges
 param.pg = 1;           % gauge to predict at
 param.np = 15;          % number of periods to predict for
 param.pt = param.tr * param.fs; % index of prediction time
 param.nt = param.Ta * param.fs; % # indices used in reconstruction
+param.window = 10;              % number of seconds outside of prediction to use
 
 % Calculate prediction zone using one probe and fourier transform
 
@@ -31,6 +33,7 @@ tr = param.tr;            % initial time (s)
 Ta = param.Ta;             % assimilation time (s)
 fs = param.fs;
 
+stat = struct;
 
 % Preprocess to get spatiotemporal points and resampled observations
 [X_, T_, eta_] = preprocess(param, data, time, x);
@@ -41,7 +44,7 @@ fs = param.fs;
 % Find frequency, wavenumber, amplitude, phase
 [w, k, A, phi] = freq_fft(param,eta);
 
-% % Evaluating reconstruction at time calculated
+% % Evaluating reconstruction at reconstruction time 
 % t_mat = w.*t_sample .* ones(length(t_sample), length(w));   % matrix for cosine evaluation
 % 
 % n = A'.*cos(-t_mat - phi');     % evaluate cosine
@@ -52,44 +55,28 @@ fs = param.fs;
 % plot(T, m, 'k--', 'linewidth', 2);
 % plot(T, eta)
 
-dx = x(pg) - x(mg);
+% Reconstruct at perscribed time window
+[r, t, stat] = reconstruct_slice_fft(param, stat, X_, T_, w, k, A, phi);
 
-c_g1 = 9.81/(min(w)*2);
-c_g2 = 9.81/(max(w)*2);
+% Unpack indices for reconstruction
+tr1 = stat.tr1;
+tr2 = stat.tr2;
 
-t_min = dx/c_g2;
-t_max = dx/c_g1 + Ta;
+% Unpack time values for prediction window
+t_min = stat.t_min;
+t_max = stat.t_max;
 
-if t_min > t_max
-    fprintf("prediction boundary warning, t_min > t_max")
-end
+% Get corresponding measured data
+p = eta_(tr1:tr2, pg);
 
-windowLow = 10;
-windowHigh = 10;
-
-% time indices for evaluation window
-tilo = (tr-Ta+round((t_min-windowLow),0))*fs;
-tihi = (tr-Ta+round((t_max+windowHigh),0))*fs;
-
-t_meas = time(tilo:tihi);
-
-p2 = eta_(:,pg);
-p2_meas = p2(tilo:tihi);
-
-
-t_reconstruct = time(tilo) : 1/fs : time(tihi);
-
-t_re_mat = w.* t_reconstruct' .* ones(length(t_reconstruct), length(w));
-x_re_mat = k.*     dx         .* ones(length(t_reconstruct), length(w));
-
-q = A'.*cos(x_re_mat - t_re_mat - phi');
-r = sum(q,2);
+% Normalized root mean square error
+e = rmse(r, p, stat);
 
 figure
 subplot(2,1,1)
 hold on
-plot(t_reconstruct, r, 'k--', 'linewidth', 2)
-plot(t_meas, p2_meas, 'b')
+plot(t, r, 'k--', 'linewidth', 2)
+plot(t, p, 'b')
 xline(t_min+tr-Ta)
 xline(t_max+tr-Ta)
 % xline(tr, 'k--')
@@ -100,7 +87,7 @@ ylabel('amplitude (m)')
 title('Wave forecast and measurement')
 
 subplot(2,1,2)
-plot(t_meas, (r-p2_meas).^2, 'r')
+plot(t, (r-p).^2, 'r')
 xline(t_min+tr-Ta)
 xline(t_max+tr-Ta)
 % xline(tr-Ta, 'k--')
