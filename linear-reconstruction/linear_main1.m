@@ -2,7 +2,7 @@
 % Published: 2/9/21
 % Updated:   2/9/21
 
-% Perform reconstruction using a single probe worth of data and FFT
+% Perform reconstruction using a single probe using FFT
 % Evaluate the error between the wave propagation and measurement
 
 clear
@@ -14,7 +14,7 @@ load '../data/mat/1.10.22/A.mat'
 
 param = struct;
 param.fs = 32;          % sampling frequency
-param.tr = 60;          % reconstruction time
+param.tr = 75;          % reconstruction time
 param.Ta = 15;          % reconstruction assimilation time
 param.nf = 20;          % number of frequencies used for reconstruction
 param.mu = .05;         % cutoff threshold
@@ -24,8 +24,6 @@ param.np = 15;          % number of periods to predict for
 param.pt = param.tr * param.fs; % index of prediction time
 param.nt = param.Ta * param.fs; % # indices used in reconstruction
 param.window = 10;              % number of seconds outside of prediction to use
-
-% Calculate prediction zone using one probe and fourier transform
 
 mg = param.mg;
 pg = param.pg;

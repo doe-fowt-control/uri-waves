@@ -20,8 +20,8 @@ if t_min > t_max
 end
 
 % time indices for evaluation window
-tr1 = (tr-Ta+round((t_min-window),0))*fs;
-tr2 = (tr-Ta+round((t_max+window),0))*fs;
+tr1 = round((tr-Ta+t_min-window)*fs);
+tr2 = round((tr-Ta+t_max+window)*fs);
 t = T_(tr1:tr2, 1);
 
 tp1 = round((tr-Ta+t_min)*fs) - tr1;
