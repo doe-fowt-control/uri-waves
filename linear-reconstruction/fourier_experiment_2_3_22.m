@@ -3,7 +3,7 @@ load '../data/mat/1.10.22/A.mat'
 
 % Calculate prediction zone using one probe and fourier transform
 
-i1 = 3;
+i1 = 4;
 i2 = 1;
 
 p1 = data(:,i1);
@@ -11,8 +11,8 @@ p2 = data(:,i2);
 
 fs = round(1/((time(end)-time(1))/numel(time)),0);
 
-t1 = 60;            % initial time (s)
-t = 10;             % assimilation time (s)
+t1 = 61;            % initial time (s)
+t = 15;             % assimilation time (s)
 L = t*fs;           % length of signal
 
 f = fs*(0:(L/2))/L; % frequencies (Hz)
@@ -29,12 +29,28 @@ A(2:end-1) = 2*A(2:end-1);  % double all but the first magnitude (DC)
 phi = angle(Y);                     % find phase
 phi = phi(1:L/2+1);
 
-% threshold filtering on b, f, phi
-mu = 0.05;
-mask = A > 0.05 * max(A);
-A = A(mask);
-f = f(mask);
-phi = phi(mask);
+
+% Threshold filtering on A, f, phi
+% TODO make this more robust
+c = 0.05;
+E = trapz(f, A); % total energy
+S = cumtrapz(f, A); % energy integral
+
+R = S / E; % percent of total energy at each bin
+
+[lo_val, lo_idx] = min(abs(R - c));
+[hi_val, hi_idx] = min(abs(R - (1-c)));
+A = A(lo_idx: hi_idx);
+f = f(lo_idx: hi_idx);
+phi = phi(lo_idx: hi_idx);
+
+
+% % threshold filtering on A, f, phi
+% mu = 0.05;
+% mask = A > 0.05 * max(A);
+% A = A(mask);
+% f = f(mask);
+% phi = phi(mask);
 
 t_mat = f.*t_sample .* ones(length(t_sample), length(f));   % matrix for cosine evaluation
 
@@ -81,7 +97,7 @@ plot(t_meas - t1, p2_meas, 'b')
 xline(t_min)
 xline(t_max)
 xlim([t_min - windowLow t_max + windowHigh])
-legend('reconstruction', 'measurement')
+legend('reconstruction', 'measurement', 'prediction zone boundary')
 xlabel('time (s)')
 ylabel('amplitude (m)')
 title('Wave forecast and measurement')
