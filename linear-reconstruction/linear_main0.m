@@ -1,4 +1,7 @@
-%% Load data
+%% Shawn Albertson
+% Published: 2/8/21
+% Updated:   2/14/21
+
 clear
 
 addpath '/Users/shawnalbertson/Documents/Research/uri-waves/linear-reconstruction/functions'
@@ -32,7 +35,7 @@ param.nt = param.Ta * param.fs; % # indices used in reconstruction
 [X_, T_, eta_] = preprocess(param, data, time, x);
 
 % Select subset of data for remaining processing
-[X, T, eta] = subset(param, X_, T_, eta_);
+[param, X, T, eta] = subset(param, X_, T_, eta_);
 
 % Calculate spectral characteristics and reconstruction frequencies
 [w, k, stat] = freq_range(param, eta);
