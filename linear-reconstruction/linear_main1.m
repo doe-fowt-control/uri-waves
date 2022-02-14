@@ -20,7 +20,6 @@ param.nf = 20;          % number of frequencies used for reconstruction
 param.mu = .05;         % cutoff threshold
 param.mg = 2;           % measurement gauges
 param.pg = 1;           % gauge to predict at
-param.np = 15;          % number of periods to predict for
 param.pt = param.tr * param.fs; % index of prediction time
 param.nt = param.Ta * param.fs; % # indices used in reconstruction
 param.window = 10;              % number of seconds outside of prediction to use
