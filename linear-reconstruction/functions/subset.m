@@ -4,8 +4,8 @@ mg = param.mg;      % measurement gauges
 tr = param.tr;
 Ta = param.Ta;
 
-[v, i1] = min(abs(tr - Ta - T(:, 1)));
-[v, i2] = min(abs(tr - T(:, 1)));
+[~, i1] = min(abs(tr - Ta - T(:, 1)));
+[~, i2] = min(abs(tr - T(:, 1)));
 
 i2 = i2-1;
 

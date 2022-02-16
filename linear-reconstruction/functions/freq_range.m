@@ -1,4 +1,4 @@
-function [w, k, stat] = freq_range(param, eta)
+function [w, k, stat] = freq_range(param, stat, eta, x)
 % eta_obs - raw observations
 % param - parameters defined in linear_full.m
 
@@ -19,7 +19,7 @@ noverlap = param.noverlap;
 nfft = param.nfft;
 
 % Calculate once to determine length
-pxx1 = pwelch(eta(:, 1), window, noverlap, nfft, fs);
+[pxx1, f] = pwelch(eta(:, 1), window, noverlap, nfft, fs);
 
 nx = size(eta, 2); % Number of wave gauges
 npxx = length(pxx1); % Number of psd points
@@ -29,18 +29,24 @@ pxxt = ones(npxx, nx);
 pxxt(:, 1) = pxx1;
 
 % Iterate through remaining wave gauges, average all
-for g = 2:1:nx
-    [pxxt(:, g), f] = pwelch(eta(:, g), window, noverlap, nfft, fs);
+if nx > 1
+    for g = 2:1:nx
+        [pxxt(:, g), f] = pwelch(eta(:, g), window, noverlap, nfft, fs);
+    end
 end
-
 pxx = mean(pxxt, 2);
 
 [w,k] = get_freqs(mu, nf, pxx, f);
-[w1, k1] = get_freqs(mu, nf, pxxt(:,1), f);
-[w6, k6] = get_freqs(mu, nf, pxxt(:,6), f);
+% want the index of the gauges that corresponds to the smallest and largest
+% position of the wave gauges
+
+
+% [w6, k6] = get_freqs(mu, nf, pxxt(:,find(~abs(x(param.mg) - max(x(param.mg)))) ), f);
+[w1, k1] = get_freqs(mu, nf, pxxt(:,x(param.mg) - max(x(param.mg)) == 0), f);
+[w6, k6] = get_freqs(mu, nf, pxxt(:,x(param.mg) - min(x(param.mg)) == 0), f);
 
 % Calculate key wave statistics, store them as a structure called stat
-stat = struct;
+% stat = struct;
 
 stat.w_hi_avg = max(w);
 stat.w_lo_avg = min(w);

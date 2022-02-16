@@ -17,28 +17,30 @@ load '../data/noise.mat'
 
 param = struct;
 param.fs = 32;          % sampling frequency
-param.tr = 71;          % reconstruction time
-param.Ta = 15;          % reconstruction assimilation time
-param.nf = 30;          % number of frequencies used for reconstruction
+param.tr = 74;          % reconstruction time
+param.Ta = 30;          % reconstruction assimilation time
+param.nf = 20;          % number of frequencies used for reconstruction
 param.mu = .05;         % cutoff threshold
 param.window = [];      % pwelch window
 param.noverlap = [];    % pwelch noverlap
 param.nfft = [];        % pwelch nfft
 param.noise = pxxn;     % example of noisy signal
-param.mg = 1:6;         % measurement gauges
-param.pg = 7;           % gauge to predict at
+param.mg = 2;         % measurement gauges
+param.pg = 1;           % gauge to predict at
 param.np = 15;          % number of periods to predict for
 param.pt = param.tr * param.fs; % index of prediction time
 param.nt = param.Ta * param.fs; % # indices used in reconstruction
+
+stat = struct;
 
 % Preprocess to get spatiotemporal points and resampled observations
 [X_, T_, eta_] = preprocess(param, data, time, x);
 
 % Select subset of data for remaining processing
-[param, X, T, eta] = subset(param, X_, T_, eta_);
+[stat, X, T, eta] = subset(param, stat, X_, T_, eta_);
 
 % Calculate spectral characteristics and reconstruction frequencies
-[w, k, stat] = freq_range(param, eta);
+[w, k, stat] = freq_range(param, stat, eta, x);
 
 % Find linear weights for reconstruction
 [a, b] = linear_weights(X, T, eta, w, k);

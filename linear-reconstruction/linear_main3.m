@@ -19,17 +19,13 @@ param.Ta = 10;          % reconstruction assimilation time
 param.mu = .05;         % cutoff threshold
 param.mg = 1;           % measurement gauges
 param.pg = 1;           % gauge to predict at
-param.pt = param.tr * param.fs + 1; % index of prediction time
-param.nt = param.Ta * param.fs; % # indices used in reconstruction
-param.window = 3;              % number of seconds outside of prediction to use
+param.window = 3;       % number of seconds outside of prediction to use
 
 mg = param.mg;
 pg = param.pg;
 tr = param.tr;            % initial time (s)
-Ta = param.Ta;             % assimilation time (s)
+Ta = param.Ta;            % assimilation time (s)
 fs = param.fs;
-pt = param.pt;
-nt = param.nt;
 window = param.window;
 
 stat = struct;

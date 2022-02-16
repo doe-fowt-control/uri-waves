@@ -11,7 +11,6 @@ clear
 addpath '/Users/shawnalbertson/Documents/Research/uri-waves/linear-reconstruction/functions'
 
 load '../data/mat/1.10.22/A.mat'
-% load '../data/mat/12.10.21/D.mat'
 
 param = struct;
 param.fs = 32;          % sampling frequency
@@ -19,8 +18,7 @@ param.Ta = 15;          % reconstruction assimilation time
 param.mu = .05;         % cutoff threshold
 param.mg = 4;           % measurement gauge
 param.pg = 1;           % gauge to predict at
-param.nt = param.Ta * param.fs; % # indices used in reconstruction
-param.window = 5;              % number of seconds outside of prediction to use
+param.window = 5;       % number of seconds outside of prediction to use
 
 % Calculate prediction zone using one probe and fourier transform
 

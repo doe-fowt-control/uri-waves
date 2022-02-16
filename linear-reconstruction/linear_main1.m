@@ -13,14 +13,12 @@ load '../data/mat/1.10.22/A.mat'
 
 param = struct;
 param.fs = 32;          % sampling frequency
-param.tr = 55.594;          % reconstruction time
+param.tr = 100;      % reconstruction time
 param.Ta = 15;          % reconstruction assimilation time
 param.mu = .05;         % cutoff parameter
-param.mg = 2;           % measurement gauges
+param.mg = 5;           % measurement gauges
 param.pg = 1;           % gauge to predict at
-param.pt = param.tr * param.fs; % index of prediction time
-param.nt = param.Ta * param.fs; % # indices used in reconstruction
-param.window = 3;              % number of seconds outside of prediction to use for visualization
+param.window = 10;       % number of seconds outside of prediction to use for visualization
 
 mg = param.mg;
 pg = param.pg;
@@ -43,8 +41,8 @@ T_(1:100, :) = [];
 % Find frequency, wavenumber, amplitude, phase
 [w, k, A, phi] = freq_fft(param,eta);
 
-% % Check that reconstruction worked (create plots)
-% check_reconstruction(param, stat, T_, eta_, w, A, phi)
+% Check that reconstruction worked (create plots)
+check_reconstruction(param, stat, T_, eta_, w, A, phi)
 
 % Propagate to new space / time region
 [r, t, stat] = reconstruct_slice_fft(param, stat, X_, T_, w, k, A, phi);
@@ -61,17 +59,17 @@ subplot(2,1,1)
 hold on
 plot(t, r, 'k--', 'linewidth', 2)
 plot(t, p, 'b')
-xline(t_min, 'k-.')
-xline(t_max, 'k-.')
-legend('reconstruction', 'measurement', 'prediction zone boundary')
+xline(t_min, 'g-.')
+xline(t_max, 'r-.')
+legend('prediction', 'measurement', 'prediction zone')
 xlabel('time (s)')
 ylabel('amplitude (m)')
 title('Wave forecast and measurement')
 
 subplot(2,1,2)
 plot(t, (r-p).^2, 'r')
-xline(t_min, 'k-.')
-xline(t_max, 'k-.')
+xline(t_min, 'g-.')
+xline(t_max, 'r-.')
 legend('error', 'prediction zone boundary')
 xlabel('time (s)')
 ylabel('square difference')
