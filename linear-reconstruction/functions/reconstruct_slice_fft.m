@@ -9,8 +9,8 @@ mg = param.mg;
 
 dx = X_(1, pg) - X_(1, mg);
 
-c_g1 = 9.81 / (min(w)*2);
-c_g2 = 9.81 / (max(w)*2);
+c_g1 = stat.c_g1;
+c_g2 = stat.c_g2;
 
 t_min = dx/c_g2;
 t_max = dx/c_g1 + Ta;
