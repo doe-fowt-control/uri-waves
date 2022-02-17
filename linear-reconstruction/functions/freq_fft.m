@@ -1,8 +1,13 @@
-function [stat, w, k, A, phi] = freq_fft(param, stat, eta)
+function [stat] = freq_fft(param, stat, eta_)
 
 fs = param.fs;
 mu = param.mu;
+mg = param.mg;
 
+i1 = stat.i1;
+i2 = stat.i2;
+
+eta = eta_(i1:i2, mg);
 
 % Find amplitude, frequency, phase
 y = fft(eta);           % Compute DFT of x
@@ -17,17 +22,18 @@ A = A(1:round(n/2));           % Use first half of outputs
 phi = phi(1:round(n/2));
 f = f(1:round(n/2));
 w = f * 2*pi;
+k = w.^2 / 9.81;
 
-figure
-hold on
-plot(f, A)
-yline(mu*max(A))
+% figure
+% hold on
+% plot(A)
+% yline(mu*max(A))
 
 aa = A - mu*max(A);
 aa(aa < 0) = 0;
 zpos = find(~[0 aa' 0]);
 [~, v] = max(diff(zpos));
-lo_idx = zpos(v)+1;
+lo_idx = zpos(v);
 hi_idx = zpos(v+1)-1;
 
 stat.c_g1 = 9.81 / (w(lo_idx)*2);
@@ -46,9 +52,14 @@ stat.c_g2 = 9.81 / (w(hi_idx)*2);
 % stat.c_g1 = 9.81 / (w(lo_idx)*2);
 % stat.c_g2 = 9.81 / (w(hi_idx)*2);
 
-% A = A(lo_idx: hi_idx);
-% w = w(lo_idx: hi_idx);
-% phi = phi(lo_idx: hi_idx);
 
-% Consider the wavenumber
-k = w.^2 / 9.81;
+w = w(lo_idx: hi_idx);
+k = k(lo_idx: hi_idx);
+A = A(lo_idx: hi_idx);
+phi = phi(lo_idx: hi_idx);
+
+
+stat.k = k;
+stat.w = w;
+stat.A = A;
+stat.phi = phi;

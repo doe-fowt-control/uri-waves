@@ -1,13 +1,18 @@
-function [slice, t, stat] = reconstruct_slice_fft(param, stat, X_, T_, w, k, A, phi)
+function [slice, t, stat] = reconstruct_slice_fft(param, stat, x)
 
 window = param.window;
-tr = param.tr;
 Ta = param.Ta;
 fs = param.fs;
 pg = param.pg;
 mg = param.mg;
 
-dx = X_(1, pg) - X_(1, mg);
+w = stat.w;
+k = stat.k;
+A = stat.A;
+phi = stat.phi;
+
+% dx = X_(1, pg) - X_(1, mg);
+dx = x(pg) - x(mg);
 
 c_g1 = stat.c_g1;
 c_g2 = stat.c_g2;

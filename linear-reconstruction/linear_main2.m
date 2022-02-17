@@ -1,6 +1,6 @@
 %% Shawn Albertson
 % Published: 2/9/21
-% Updated:   2/14/21
+% Updated:   2/16/21
 
 % Perform reconstruction using a single probe using FFT
 % Evaluate the error between the wave propagation and measurement across
@@ -31,9 +31,9 @@ window = param.window;
 stat = struct;
 
 % Preprocess to get spatiotemporal points and resampled observations
-[X_, T_, eta_] = preprocess(param, data, time, x);
+[X, T, eta] = preprocess(param, data, time, x);
 
-t_list = T_(40*fs:100*fs, 1);
+t_list = T(40*fs:100*fs, 1);
 e_list = ones(length(t_list), 1);
 
 for ti = 1:1:length(t_list)
@@ -42,20 +42,20 @@ for ti = 1:1:length(t_list)
     param.pt = round(param.tr * param.fs); % index of prediction time
     
     % Select subset of data for remaining processing
-    [stat, X, T, eta] = subset(param, stat, X_, T_, eta_);
+    [stat] = subset2(param, stat, T);
     
     % Find frequency, wavenumber, amplitude, phase
-    [w, k, A, phi] = freq_fft(param, eta);
+    [stat] = freq_fft(param, stat, eta);
     
-    % Reconstruct at perscribed time window
-    [r, t, stat] = reconstruct_slice_fft(param, stat, X_, T_, w, k, A, phi);
+    % Reconstruct
+    [r, t, stat] = reconstruct_slice_fft(param, stat, x);
     
     % Unpack time values for prediction window
     t_min = stat.t_min;
     t_max = stat.t_max;
     
     % Get corresponding measured data
-    p = eta_(stat.i1 - window * fs: stat.i2 + window * fs + 1)';
+    p = eta(stat.i1 - window * fs: stat.i2 + window * fs + 1)';
     
     % Normalized root mean square error
     e = rmse(r, p, stat);

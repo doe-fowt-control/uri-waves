@@ -1,4 +1,4 @@
-function check_reconstruction(param, stat, T_, eta_, w, A, phi)
+function check_reconstruction(param, stat, eta)
 
 i1 = stat.i1; % indices for reconstruction in full time series
 i2 = stat.i2;
@@ -6,6 +6,10 @@ window = param.window;
 fs = param.fs;
 mg = param.mg;
 Ta = param.Ta;
+
+w = stat.w;
+A = stat.A;
+phi = stat.phi;
 
 
 % t_sample = T_(i1 - window*fs: i2 + window*fs, 1) - T_(i1 - window*fs, 1);
@@ -30,7 +34,7 @@ figure
 subplot(2,1,1)
 hold on
 plot(t_sample, m, 'k--', 'linewidth', 2);
-plot(t_sample, eta_(i1 - window*fs:i2 + window * fs + 1, mg), 'b-', 'linewidth', 1)
+plot(t_sample, eta(i1 - window*fs:i2 + window * fs + 1, mg), 'b-', 'linewidth', 1)
 xline(0, 'g-.', 'LineWidth', 1)
 xline(Ta, 'r-.', 'LineWidth', 1)
 legend('reconstruction', 'measurement', 'assimilation start', 'assimilation end')
@@ -40,7 +44,7 @@ ylabel('Amplitude (m)')
 
 subplot(2,1,2)
 hold
-plot(t_sample, abs(m - eta_(i1 - window*fs:i2 + window * fs + 1, mg)), 'k-')
+plot(t_sample, abs(m - eta(i1 - window*fs:i2 + window * fs + 1, mg)), 'k-')
 xline(0, 'g-.', 'LineWidth', 1)
 xline(Ta, 'r-.', 'LineWidth', 1)
 legend('error', 'assimilation start', 'assimilation end')

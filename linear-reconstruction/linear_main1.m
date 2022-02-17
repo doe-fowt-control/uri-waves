@@ -1,6 +1,6 @@
 %% Shawn Albertson
 % Published: 2/9/21
-% Updated:   2/14/21
+% Updated:   2/16/21
 
 % Perform reconstruction using a single probe using FFT
 % Evaluate the error between the wave propagation and measurement
@@ -30,29 +30,29 @@ window = param.window;
 stat = struct;
 
 % Preprocess to get spatiotemporal points and resampled observations
-[X_, T_, eta_] = preprocess(param, data, time, x);
+[X, T, eta] = preprocess(param, data, time, x);
 
 % Try removing entries from full time array
-T_(1:100, :) = [];
+T(1:100, :) = [];
 
 % Select subset of data for remaining processing
-[stat, X, T, eta] = subset(param, stat, X_, T_, eta_);
+[stat] = subset2(param, stat, T);
 
 % Find frequency, wavenumber, amplitude, phase
-[w, k, A, phi] = freq_fft(param,eta);
+[stat] = freq_fft(param, stat, eta);
 
 % Check that reconstruction worked (create plots)
-check_reconstruction(param, stat, T_, eta_, w, A, phi)
+check_reconstruction(param, stat, eta)
 
 % Propagate to new space / time region
-[r, t, stat] = reconstruct_slice_fft(param, stat, X_, T_, w, k, A, phi);
+[r, t, stat] = reconstruct_slice_fft(param, stat, x);
 
 % Unpack time values for prediction window
 t_min = stat.t_min;
 t_max = stat.t_max;
 
 % Get corresponding measured data
-p = eta_(stat.i1 - window * fs:stat.i2 + window * fs +1, pg);
+p = eta(stat.i1 - window * fs:stat.i2 + window * fs +1, pg);
 
 figure
 subplot(2,1,1)
