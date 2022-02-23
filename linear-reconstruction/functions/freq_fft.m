@@ -26,8 +26,9 @@ k = w.^2 / 9.81;
 
 % figure
 % hold on
-% plot(A)
+% plot(9.81/2./w, A)
 % yline(mu*max(A))
+% xlim([0.3 0.7])
 
 aa = A - mu*max(A);
 aa(aa < 0) = 0;
@@ -53,10 +54,10 @@ stat.c_g2 = 9.81 / (w(hi_idx)*2);
 % stat.c_g2 = 9.81 / (w(hi_idx)*2);
 
 
-w = w(lo_idx: hi_idx);
-k = k(lo_idx: hi_idx);
-A = A(lo_idx: hi_idx);
-phi = phi(lo_idx: hi_idx);
+% w = w(lo_idx: hi_idx);
+% k = k(lo_idx: hi_idx);
+% A = A(lo_idx: hi_idx);
+% phi = phi(lo_idx: hi_idx);
 
 
 stat.k = k;

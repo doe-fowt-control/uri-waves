@@ -1,4 +1,4 @@
-function [X, T, eta_obs] = preprocess(param, data, time, x)
+function [X, T, eta] = preprocess(param, data, time, x)
 % Trim data before waves fully develop and after waves stop
 % Center on mean
 % Resample at desired frequency
@@ -16,7 +16,7 @@ time = time - time(1);
 data = data - mean(data);
 
 % resample time and observations
-eta_obs = data(1: fs_old / fs_new :end, :);
+eta = data(1: fs_old / fs_new :end, :);
 time = time(1: fs_old / fs_new :end);
 
 % spatiotemporal samples

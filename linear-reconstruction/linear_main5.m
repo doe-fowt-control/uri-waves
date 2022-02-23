@@ -1,6 +1,6 @@
 %% Shawn Albertson
-% Published: 2/15/21
-% Updated:   2/15/21
+% Published: 2/16/21
+% Updated:   2/17/21
 
 % Perform reconstruction using a single probe using FFT and calculate
 % propagation error across multiple gauges
@@ -12,61 +12,70 @@ addpath '/Users/shawnalbertson/Documents/Research/uri-waves/linear-reconstructio
 load '../data/mat/1.10.22/A.mat'
 % load '../data/mat/12.10.21/D.mat'
 
-param = struct;
-param.fs = 32;          % sampling frequency
-param.Ta = 30;          % reconstruction assimilation time
-param.mu = .05;         % cutoff parameter
-param.mg = 6;           % measurement gauges
-param.window = 25;       % number of seconds outside of prediction to use for visualization
+pram = struct;  % input parameters
+stat = struct;  % calculated statistics
 
-mg = param.mg;
-Ta = param.Ta;             % assimilation time (s)
-fs = param.fs;
-window = param.window;
+% reconstruction parameters
+pram.fs = 32;          % sampling frequency
+pram.Ta = 15;          % reconstruction assimilation time
+pram.mu = .05;         % cutoff parameter
+pram.mg = 6;           % measurement gauges
+pram.window = 25;       % number of seconds outside of prediction to use for visualization
 
-stat = struct;
+% spectral parameters
+pram.ts = 30;           % spectral assimilation time
+pram.wwindow = [];      % pwelch window
+pram.noverlap = [];    % pwelch noverlap
+pram.nfft = 4096;        % pwelch nfft
+
+mg = pram.mg;
+Ta = pram.Ta;             % assimilation time (s)
+fs = pram.fs;
+window = pram.window;
+
+
 
 % Preprocess to get spatiotemporal points and resampled observations
-[X, T, eta] = preprocess(param, data, time, x);
+[X, T, eta] = preprocess(pram, data, time, x);
+
+pram.tr = 60;
+stat = spectral(pram, stat, eta);
+
+fprintf(['slow: ' num2str(stat.c_g2) ' - '])
+fprintf(['fast: ' (num2str(stat.c_g1)) '\n'])
 
 t_list = 60:20:140;
-
-
 for ti = 1:1:length(t_list)
-    param.tr = t_list(ti);
+    pram.tr = t_list(ti);
 
     % Select subset of data for remaining processing
-    stat = subset2(param, stat, T);
+    stat = subset2(pram, stat, T);
     
     % Find frequency, wavenumber, amplitude, phase
-    stat = freq_fft(param, stat, eta);
-    fprintf(['-' num2str(stat.c_g2) '-'])
-
-    x_lab = [2,3,4,5,6];
+    stat = decompose(pram, stat, eta);
+    
+    % List index of gauges to predict at
     x_pred = [7,5,4,3,2,1];
     
     for xi = 1:1:length(x_pred)
-        param.pg = x_pred(xi);
+        pram.pg = x_pred(xi);
 
         % Propagate to new space / time region
-        [r, t, stat] = reconstruct_slice_fft(param, stat, x);
+        [r, t, stat] = reconstruct_slice_fft(pram, stat, x);
         
         % Get corresponding measured data
-        p = eta(stat.i1 - window * fs:stat.i2 + window * fs +1, param.pg);
-    
-%         e = abs((r-p).^2) / (2 * var(eta(stat.i1:stat.i2, param.mg)));
+        p = eta(stat.i1 - window * fs:stat.i2 + window * fs + 1, pram.pg);
 
-        e = (r-p).^2;
-        
+        e = abs(r-p) / stat.Hs;
+
         e_list(:, xi) = e;
     
     end
     E(:, :, ti) = e_list;
 end
 
-stat.c_g2 = 0.6329;
 
-ee = sqrt(mean(E, 3));
+ee = (mean(E, 3));
 
 figure
 hold on
@@ -99,4 +108,6 @@ xline(x(x_pred), 'k:')
 
 xlabel('location (m)')
 ylabel('time (s)')
-title('Error at measured locations compared with evaluated prediction zone')
+title('Misfit at measured locations compared with evaluated prediction zone')
+
+ylim([-5 pram.Ta+window - 5])
