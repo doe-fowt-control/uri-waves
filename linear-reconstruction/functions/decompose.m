@@ -23,6 +23,9 @@ f = f(1:round(n/2));
 w = f * 2*pi;
 k = w.^2 / 9.81;
 
+% plot(f,A)
+% xlim([0 4])
+
 stat.k = k;
 stat.w = w;
 stat.A = A;

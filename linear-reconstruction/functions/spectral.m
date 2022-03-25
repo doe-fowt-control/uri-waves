@@ -37,6 +37,9 @@ end
 pxx = mean(pxxt, 2);
 w = 2*pi*f;
 
+% plot(w, pxx, 'LineWidth',1.5)
+% xlim([0 15])
+
 
 % Threshold filtering on A, f, phi
 % TODO make this more robust

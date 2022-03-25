@@ -9,16 +9,28 @@ clear
 
 addpath '/Users/shawnalbertson/Documents/Research/uri-waves/linear-reconstruction/functions'
 
-load '../data/mat/1.10.22/A.mat'
+load '../data/mat/3.21.22/D.mat'
+
+load '../data/mat/3.21.22/cal.mat'
 
 param = struct;
 param.fs = 32;          % sampling frequency
 param.tr = 100;      % reconstruction time
 param.Ta = 15;          % reconstruction assimilation time
-param.mu = .05;         % cutoff parameter
-param.mg = 5;           % measurement gauges
-param.pg = 1;           % gauge to predict at
+param.mu = .15;         % cutoff parameter
+param.mg = 1;           % measurement gauges
+param.pg = 3;           % gauge to predict at
 param.window = 10;       % number of seconds outside of prediction to use for visualization
+% spectral parameters
+param.ts = 30;           % spectral assimilation time
+param.wwindow = [];      % pwelch window
+param.noverlap = [];    % pwelch noverlap
+param.nfft = 4096;        % pwelch nfft
+
+% calibration
+param.slope = -s(1, :);
+param.intercept = s(2,:);
+
 
 mg = param.mg;
 pg = param.pg;
@@ -26,6 +38,8 @@ tr = param.tr;            % initial time (s)
 Ta = param.Ta;             % assimilation time (s)
 fs = param.fs;
 window = param.window;
+
+
 
 stat = struct;
 
@@ -35,11 +49,16 @@ stat = struct;
 % Try removing entries from full time array
 T(1:100, :) = [];
 
+stat = spectral(param, stat, eta);
+
 % Select subset of data for remaining processing
 [stat] = subset2(param, stat, T);
 
 % Find frequency, wavenumber, amplitude, phase
-[stat] = freq_fft(param, stat, eta);
+stat = decompose(param, stat, eta);
+
+% % Find frequency, wavenumber, amplitude, phase
+% [stat] = freq_fft(param, stat, eta);
 
 % Check that reconstruction worked (create plots)
 check_reconstruction(param, stat, eta)
@@ -59,21 +78,23 @@ subplot(2,1,1)
 hold on
 plot(t, r, 'k--', 'linewidth', 2)
 plot(t, p, 'b')
-xline(t_min, 'g-.')
-xline(t_max, 'r-.')
+xline(t_min, 'k-', 'linewidth', 1)
+xline(t_max, 'k-', 'linewidth', 1)
+% ylim([-0.06 0.06])
 legend('prediction', 'measurement', 'prediction zone')
 xlabel('time (s)')
 ylabel('amplitude (m)')
 title('Wave forecast and measurement')
 
 subplot(2,1,2)
-plot(t, (r-p).^2, 'r')
-xline(t_min, 'g-.')
-xline(t_max, 'r-.')
-legend('error', 'prediction zone boundary')
+plot(t, abs(r-p), 'r')
+xline(t_min, 'k-', 'linewidth', 1)
+xline(t_max, 'k-', 'linewidth', 1)
+% ylim([0 1])
+legend('error', 'prediction zone')
 xlabel('time (s)')
-ylabel('square difference')
-title('Error assessment for simple wave forecast')
+ylabel('absolute difference')
+title('Error')
 
 
 
