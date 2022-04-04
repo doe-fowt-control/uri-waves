@@ -1,6 +1,4 @@
-%% Shawn Albertson
-% Published: 2/9/21
-% Updated:   2/16/21
+%% Shawn Albertson 2/9/22
 
 % Perform reconstruction using a single probe using FFT
 % Evaluate the error between the wave propagation and measurement across
@@ -15,6 +13,7 @@ load '../data/mat/1.10.22/A.mat'
 param = struct;
 param.fs = 32;          % sampling frequency
 param.Ta = 15;          % reconstruction assimilation time
+param.ts = 20;          % spectral assimilation time
 param.mu = .05;         % cutoff threshold
 param.mg = 4;           % measurement gauge
 param.pg = 1;           % gauge to predict at
@@ -28,12 +27,16 @@ Ta = param.Ta;             % assimilation time (s)
 fs = param.fs;
 window = param.window;
 
+param.wwindow = [];      % pwelch window
+param.noverlap = [];    % pwelch noverlap
+param.nfft = 4096;        % pwelch nfft
+
 stat = struct;
 
 % Preprocess to get spatiotemporal points and resampled observations
-[X, T, eta] = preprocess(param, data, time, x);
+[t, eta] = preprocess_1g(param, data, time, x);
 
-t_list = T(40*fs:100*fs, 1);
+t_list = t(40*fs:100*fs);
 e_list = ones(length(t_list), 1);
 
 for ti = 1:1:length(t_list)
@@ -42,13 +45,17 @@ for ti = 1:1:length(t_list)
     param.pt = round(param.tr * param.fs); % index of prediction time
     
     % Select subset of data for remaining processing
-    [stat] = subset2(param, stat, T);
+    stat = subset_1g(param, stat, t);
     
-    % Find frequency, wavenumber, amplitude, phase
-    [stat] = freq_fft(param, stat, eta);
+%     % Find frequency, wavenumber, amplitude, phase
+%     stat = freq_fft(param, stat, eta);
+
+    stat = spectral_1g(param, stat, eta);
+
+    stat = decompose_1g(param, stat, eta);
     
     % Reconstruct
-    [r, t, stat] = reconstruct_slice_fft(param, stat, x);
+    [r, t_rec, stat] = reconstruct_slice_fft(param, stat, x);
     
     % Unpack time values for prediction window
     t_min = stat.t_min;

@@ -1,6 +1,9 @@
-%% Shawn Albertson
-% Published: 2/8/21
-% Updated:   2/14/21
+%% Shawn Albertson 2/8/22
+
+% Uses multiple wave gauges to attempt reconstruction. Creates a plot of
+% reconstruction with a full time series indicating where reconstruction 
+% took place. Originally created with notions of the prediction zone and 
+% frequency selection that have been updated since 2/2/22
 
 clear
 
@@ -25,7 +28,7 @@ param.window = [];      % pwelch window
 param.noverlap = [];    % pwelch noverlap
 param.nfft = [];        % pwelch nfft
 param.noise = pxxn;     % example of noisy signal
-param.mg = 2;         % measurement gauges
+param.mg = 2:6;         % measurement gauges
 param.pg = 1;           % gauge to predict at
 param.np = 15;          % number of periods to predict for
 param.pt = param.tr * param.fs; % index of prediction time

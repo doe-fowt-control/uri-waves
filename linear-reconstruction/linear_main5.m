@@ -1,6 +1,4 @@
-%% Shawn Albertson
-% Published: 2/16/21
-% Updated:   2/17/21
+%% Shawn Albertson 2/16/22
 
 % Perform reconstruction using a single probe using FFT and calculate
 % propagation error across multiple gauges
@@ -18,7 +16,7 @@ stat = struct;  % calculated statistics
 % reconstruction parameters
 pram.fs = 32;          % sampling frequency
 pram.Ta = 15;          % reconstruction assimilation time
-pram.mu = .05;         % cutoff parameter
+pram.mu = .10;         % cutoff parameter
 pram.mg = 6;           % measurement gauges
 pram.window = 25;       % number of seconds outside of prediction to use for visualization
 
@@ -36,10 +34,10 @@ window = pram.window;
 
 
 % Preprocess to get spatiotemporal points and resampled observations
-[X, T, eta] = preprocess(pram, data, time, x);
+[time, eta] = preprocess_1g(pram, data, time, x);
 
 pram.tr = 60;
-stat = spectral(pram, stat, eta);
+stat = spectral_1g(pram, stat, eta);
 
 fprintf(['slow: ' num2str(stat.c_g2) ' - '])
 fprintf(['fast: ' (num2str(stat.c_g1)) '\n'])
@@ -49,13 +47,13 @@ for ti = 1:1:length(t_list)
     pram.tr = t_list(ti);
 
     % Select subset of data for remaining processing
-    stat = subset2(pram, stat, T);
+    stat = subset_1g(pram, stat, time);
     
     % Find frequency, wavenumber, amplitude, phase
-    stat = decompose(pram, stat, eta);
+    stat = decompose_1g(pram, stat, eta);
     
     % List index of gauges to predict at
-    x_pred = [7,5,4,3,2,1];
+    x_pred = [1,2,3,4,5,6,7];
     
     for xi = 1:1:length(x_pred)
         pram.pg = x_pred(xi);

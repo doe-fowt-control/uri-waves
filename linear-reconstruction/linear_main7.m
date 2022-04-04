@@ -1,11 +1,7 @@
-%% Shawn Albertson
-% Published: 2/16/21
-% Updated:   2/17/21
+%% Shawn Albertson 3/1/22
 
-% Perform reconstruction using a single probe using FFT
-% compare calculated prediction zone with apparent prediction zone based on
-% error
-% use data from barge experiment 2/18/22
+% Single gauge propagation using calibration factors for 3.21.22 data, 
+% visualizing how prediction zone narrows as distance increases
 
 clear
 
@@ -19,8 +15,8 @@ pram = struct;  % input parameters
 stat = struct;  % calculated statistics
 
 % reconstruction parameters
-pram.fs = 32;          % sampling frequency
-pram.Ta = 5;          % reconstruction assimilation time
+pram.fs = 30;          % sampling frequency
+pram.Ta = 20;          % reconstruction assimilation time
 pram.mu = .05;         % cutoff parameter
 pram.mg = 1;           % measurement gauges
 pram.window = 25;       % number of seconds outside of prediction to use for visualization
@@ -37,19 +33,18 @@ fs = pram.fs;
 window = pram.window;
 
 % calibration
-pram.slope = -s(1, :);
-pram.intercept = s(2,:);
+pram.slope = cal(1, :);
+pram.intercept = cal(2,:);
 
 
 % Preprocess to get spatiotemporal points and resampled observations
-[X, T, eta] = preprocess(pram, data, time, x);
-
+[time, eta] = preprocess_1g(pram, data, time, x);
 
 
 x = x - min(x);
 
 pram.tr = 60;
-stat = spectral(pram, stat, eta);
+stat = spectral_1g(pram, stat, eta);
 
 fprintf(['slow: ' num2str(stat.c_g2) ' - '])
 fprintf(['fast: ' (num2str(stat.c_g1)) '\n'])
@@ -59,10 +54,10 @@ for ti = 1:1:length(t_list)
     pram.tr = t_list(ti);
 
     % Select subset of data for remaining processing
-    stat = subset2(pram, stat, T);
+    stat = subset_1g(pram, stat, time);
     
     % Find frequency, wavenumber, amplitude, phase
-    stat = decompose(pram, stat, eta);
+    stat = decompose_1g(pram, stat, eta);
     
     % List index of gauges to predict at
     x_pred = [1,2,3,4];
@@ -120,6 +115,7 @@ end
 stat.plamb = 9.81 * stat.pperiod^2 / 2 / pi;
 
 pperiod = stat.pperiod;
+% pperiod = 1.132;
 plamb = stat.plamb;
 c_g1 = stat.c_g1;
 c_g2 = stat.c_g2;
@@ -141,31 +137,31 @@ xlabel('x / \lambda_p')
 ylabel('t / T_p')
 title('Misfit for steepness 2%')
 
-ylim([-1 25])
+ylim([-1 30])
 
-% lower_prediction_limits = (1/c_g2 * plamb / pperiod) * x(x_pred) / plamb;
-% higher_prediction_limits = (Ta / pperiod) + (1/c_g1 * plamb / pperiod) * (x(x_pred) / plamb);
-% 
-% lo_index_list = ones(1, length(x_pred));
-% hi_index_list = ones(1, length(x_pred));
-% 
-% for i = 1:1:length(x_pred)
-%     lower_index_temp = find( abs(lower_prediction_limits(i) - t) == min(abs(lower_prediction_limits(i) - t)) );
-%     % account for finding multiple indices
-%     if length(lower_index_temp) > 1
-%         lower_index_temp = lower_index_temp(1);
-%     end
-%     lo_index_list(i) = lower_index_temp;
-% 
-%     hi_index_temp = find( abs(higher_prediction_limits(i) - t) == min(abs(higher_prediction_limits(i) - t)) );
-%     % account for finding multiple indices
-%     if length(hi_index_temp) > 1
-%         hi_index_temp = hi_index_temp(1);
-%     end
-%     hi_index_list(i) = hi_index_temp;
-% end
-% 
-% mean_prediction_error_list = ones(1, length(x_pred));
-% for i = 1:1:length(x_pred)
-%     mean_prediction_error_list(i) = mean(ee(lo_index_list(i):hi_index_list(i), i));
-% end
+lower_prediction_limits = (1/c_g2 * plamb / pperiod) * x(x_pred) / plamb;
+higher_prediction_limits = (Ta / pperiod) + (1/c_g1 * plamb / pperiod) * (x(x_pred) / plamb);
+
+lo_index_list = ones(1, length(x_pred));
+hi_index_list = ones(1, length(x_pred));
+
+for i = 1:1:length(x_pred)
+    lower_index_temp = find( abs(lower_prediction_limits(i) - t) == min(abs(lower_prediction_limits(i) - t)) );
+    % account for finding multiple indices
+    if length(lower_index_temp) > 1
+        lower_index_temp = lower_index_temp(1);
+    end
+    lo_index_list(i) = lower_index_temp;
+
+    hi_index_temp = find( abs(higher_prediction_limits(i) - t) == min(abs(higher_prediction_limits(i) - t)) );
+    % account for finding multiple indices
+    if length(hi_index_temp) > 1
+        hi_index_temp = hi_index_temp(1);
+    end
+    hi_index_list(i) = hi_index_temp;
+end
+
+mean_prediction_error_list = ones(1, length(x_pred));
+for i = 1:1:length(x_pred)
+    mean_prediction_error_list(i) = mean(ee(lo_index_list(i):hi_index_list(i), i));
+end
