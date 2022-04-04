@@ -27,7 +27,7 @@ t_sample = [t0, t, t1];
 t_now_mat = t_sample' .* ones(length(t_sample), length(w));   % matrix for cosine evaluation
 t_re_mat = w.*t_now_mat;
 
-n = A.*cos(-t_re_mat - phi);     % evaluate cosine
+n = A'.*cos(-t_re_mat - phi');     % evaluate cosine
 m = sum(n,2);                   % find sum of cosine waves
 
 figure
