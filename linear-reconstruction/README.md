@@ -37,28 +37,28 @@ A description of the files contained here:
 
 **linear_main1**
 
-% Perform reconstruction using a single probe using FFT
-% Optionally plot the error between the wave propagation and measurement
-% Optionally visualize reconstruction and reconstruction error
+- Perform reconstruction using a single probe using FFT
+- Optionally plot the error between the wave propagation and measurement
+- Optionally visualize reconstruction and reconstruction error
 
 **linear_main2**
 
-% Perform reconstruction using a single probe using FFT
-% Evaluate the error between the wave propagation and measurement across
-% full time series
+- Perform reconstruction using a single probe using FFT  
+- Evaluate the error between the wave propagation and measurement across
+- full time series
 
 **linear_main5**
 
-% Perform reconstruction using a single probe using FFT and calculate
-% propagation error across multiple gauges
+- Perform reconstruction using a single probe using FFT and calculate
+- propagation error across multiple gauges
 
 **linear_main7**
 
-% Single gauge propagation using calibration factors for 3.21.22 data,
-% visualizing how prediction zone narrows as distance increases
+- Single gauge propagation using calibration factors for 3.21.22 data,
+- visualizing how prediction zone narrows as distance increases
 
 **linear_main8**
 
-% Perform reconstruction using n probes
-% Plot prediction at prediction gauge pram.pg
+- Perform reconstruction using n probes
+- Plot prediction at prediction gauge pram.pg
 
