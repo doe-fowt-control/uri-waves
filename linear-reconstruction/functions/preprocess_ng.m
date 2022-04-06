@@ -1,4 +1,4 @@
-function [X, T, eta] = preprocess(param, data, time, x)
+function [X, T, t, eta] = preprocess_ng(param, data, time, x)
 % Trim data before waves fully develop and after waves stop
 % Center on mean
 % Resample at desired frequency
@@ -26,8 +26,8 @@ data = data - mean(data);
 
 % resample time and observations
 eta = data(1: fs_old / fs_new :end, :);
-time = time(1: fs_old / fs_new :end);
+t = time(1: fs_old / fs_new :end);
 
 % spatiotemporal samples
-[X, T] = meshgrid(x, time);
+[X, T] = meshgrid(x, t);
 
