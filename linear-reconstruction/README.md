@@ -4,16 +4,17 @@ This directory contains MATLAB functions to perform wave reconstruction and prop
 The file `linear_main8.m` is the most up to date with implementation for multiple wave gauges, and `linear_main9.m` for a single wave gauge. The work flow (order of functions called) for each of these is now laid out, naming the function and its general role without the suffix. 
 
 ## Workflow
+Here we describe the interaction and purpose functions used in the main scripts.
 
-`make_structs` : The call to `make_structs` initializes important parameters for entire calculation. It does this by taking advantage of the MATLAB _structure_ data type, which is used to store values in a single object. Two structs are used throughout the scripts. `pram` is a set of input parameters, set at the beginning of the script, which establishes details such as reconstruction assimilation time and other parameters needed to make a prediction. `stat` is an object which is added to in different ways in the scripts, storing information that is calculated at one point and may need to be referenced later on (for example, the peak period of the wave series. `make_structs` is actually a special function in this implementation, as it is meant to be modified by the user to change parameters before running the main script.
+`make_structs` : The call to `make_structs` initializes important parameters for the calculation. It does this by taking advantage of the MATLAB _structure_ data type, which is used to store many values in a single object. Two _structures_ are used throughout the scripts. `pram` is a set of input parameters (such as reconstruction assimilation time) which are defined in `make_structs`. `stat` exists to keep track of values of interest (such as significant wave height) as they are calculated while the code runs. `make_structs` is the only function which is meant to be modified by the user before running the main script, as it gives the user control over the simulation parameters in `pram`.
 
-`preprocess` : Applies calibration to wave gauge data, centers data on mean, resamples at reasonable rate.
+`preprocess` : Applies calibration to wave gauge data, centers data on mean, resamples at desired rate.
 
 `subset` : Finds indices of data in full time series to use for reconstruction and spectral assimilation.
 
-`spectral` : Uses spectral data to find parameters based on this, such as threshold group velocities, reconstruction bandwidth, significant wave height, peak period. 
+`spectral` : Uses spectral assimilation data to calculate statistics such as threshold group velocities, reconstruction bandwidth, significant wave height, peak period. 
 
-`decompose` : Finds constituent wave representation of full wave field.
+`decompose` : Uses reconstruction assimilation data to find constituent wave representation of full wave field.
 
 `reconstruct` : Reconstructs constituent waves at time and location of interest.
 
@@ -21,7 +22,7 @@ The file `linear_main8.m` is the most up to date with implementation for multipl
 To run the code, you will need access to data. Data is available in the shared Google Drive folder listed below (you may need to request access). It is recommended to download the subfolder called `mat` which includes the formatted data for loading into MATLAB as is already written.
 https://drive.google.com/drive/u/0/folders/0AAO5OBY7s6L9Uk9PVA. 
 
-filename : ‘data/mat/date/wave.mat’
+filename : ‘data/mat/DATE/CASE.mat’
 
 The .mat file which can be imported to matlab with `load` command with following elements
 
@@ -35,7 +36,7 @@ nt is number of temporal samples
 
 Save the folder `linear-reconstruction` at the same level as `data`. 
 
-Open linear_main_.m in MATLAB, and run.
+Open linear_main#.m in MATLAB, and run.
 
 ## Description of main files
 
