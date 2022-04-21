@@ -5,22 +5,23 @@
 % Optionally visualize reconstruction and reconstruction error
 
 
-% clear
+clear
 
 addpath '/Users/shawnalbertson/Documents/Research/uri-waves/linear-reconstruction/functions'
 
-load '../data/mat/3.21.22/B.mat'
+% load '../data/mat/3.21.22/B.mat'
+load '../data/mat/12.10.21/D.mat'
 
 [pram, stat] = make_structs;
 
-% calibration
-load '../data/mat/3.21.22/cal.mat'
-pram.slope = cal(1, :);
-pram.intercept = cal(2,:);
+% % calibration
+% load '../data/mat/3.21.22/cal.mat'
+% pram.slope = cal(1, :);
+% pram.intercept = cal(2,:);
 
+pram.mg = 4;
+pram.pg = 1;
 
-pram.mg = 1;
-pram.pg = 2;
 tr = pram.tr;            % initial time (s)
 Ta = pram.Ta;             % assimilation time (s)
 fs = pram.fs;
@@ -58,16 +59,34 @@ p = eta(stat.i1 - window * fs:stat.i2 + window * fs +1, pram.pg);
 figure
 % subplot(2,1,1)
 hold on
-plot(t_rec, r, 'k--', 'linewidth', 2)
-plot(t_rec, p, 'b')
-xline(stat.t_min, 'k-', 'linewidth', 1)
-xline(stat.t_max, 'k-', 'linewidth', 1)
-xlim([-5 20])
-% ylim([-0.06 0.06])
-legend('prediction', 'measurement', 'prediction zone')
-xlabel('time (s)')
-ylabel('amplitude (m)')
-title('Wave forecast and measurement')
+% plot(t_rec ./ stat.pperiod, r ./ stat.Hs, 'linewidth', 1)
+% plot(t_rec ./ stat.pperiod, p ./ stat.Hs, 'linewidth', 1)
+% xline(pram.Ta ./ stat.pperiod, 'k--', 'LineWidth', 1)
+% xline(stat.t_min ./ stat.pperiod, 'k-', 'linewidth', 1)
+% xline(stat.t_max ./ stat.pperiod, 'k-', 'linewidth', 1)
+
+plot((t_rec - pram.Ta) ./ stat.pperiod, r ./ stat.Hs, 'linewidth', 1)
+plot((t_rec - pram.Ta) ./ stat.pperiod, p ./ stat.Hs, 'linewidth', 1)
+xline((pram.Ta - pram.Ta) ./ stat.pperiod, 'k--', 'LineWidth', 1)
+xline((stat.t_min - pram.Ta) ./ stat.pperiod, 'k-', 'linewidth', 2)
+xline((stat.t_max - pram.Ta) ./ stat.pperiod, 'k-', 'linewidth', 2)
+
+xlim([(stat.t_min - pram.Ta) ./ stat.pperiod - stat.pperiod * 3 ...
+    (stat.t_max - pram.Ta) ./ stat.pperiod + stat.pperiod * 3 ...
+    ]);
+ax = gca;
+xticks(sort([ax.XAxis.TickValues, round((stat.t_max - pram.Ta) ./ stat.pperiod, 2)]))
+ylim_val = 2*max(p ./ stat.Hs);
+ylim([-ylim_val ylim_val])
+legend('prediction', ...
+    'measurement', ...
+    'reconstruction time', ...
+    'prediction zone boundary', ...
+    'Location', 'northwest'...
+    )
+xlabel('time ( t / T_p )')
+ylabel('amplitude ( m / H_s )')
+title('Wave prediction using one gauge compared with measurement')
 
 % subplot(2,1,2)
 % plot(t, abs(r-p), 'r')

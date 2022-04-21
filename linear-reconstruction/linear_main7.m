@@ -124,7 +124,7 @@ xlabel('x / \lambda_p')
 ylabel('t / T_p')
 title('Misfit for steepness 2%')
 
-ylim([-1 20])
+ylim([-3 15])
 
 lower_prediction_limits = (1/c_g2 * plamb / pperiod) * x(x_pred) / plamb;
 higher_prediction_limits = (Ta / pperiod) + (1/c_g1 * plamb / pperiod) * (x(x_pred) / plamb);

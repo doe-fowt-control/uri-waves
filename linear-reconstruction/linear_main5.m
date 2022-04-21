@@ -7,8 +7,8 @@ clear
 
 addpath '/Users/shawnalbertson/Documents/Research/uri-waves/linear-reconstruction/functions'
 
-load '../data/mat/1.10.22/A.mat'
-% load '../data/mat/12.10.21/D.mat'
+% load '../data/mat/1.10.22/A.mat'
+load '../data/mat/12.10.21/D.mat'
 
 [pram, stat] = make_structs;
 
@@ -74,22 +74,50 @@ for id = 1:1:3
     C(:, i_list - id) = ee;
     C(:, i_list + id) = ee;
 end
+stat.plamb = 9.81 * stat.pperiod^2 / 2 / pi;
 
-imagesc(xd, t, C)
+pperiod = stat.pperiod;
+% pperiod = 1.132;
+plamb = stat.plamb;
+c_g1 = stat.c_g1;
+c_g2 = stat.c_g2;
+Ta = pram.Ta;
+
+% imagesc plot scaled by peak period and peak wavelength
+imagesc(xd./plamb, t./pperiod, C, [0, 0.5])
 set(gca,'YDir','normal') 
 colorbar
 colormap(flipud(gray))
 
+b = max(x(x_pred));
+c = min(x(x_pred));
+plot([0 b / plamb], [0, (1/c_g2 * plamb / pperiod) * b / plamb], 'r-')
+plot([0 b / plamb], [Ta/pperiod, (Ta / pperiod) + (1/c_g1 * plamb / pperiod) * (b / plamb)], 'r-')
 
-a = 0;
-b = max(x(x_pred)) + a;
-c = min(x(x_pred)) * 0;
-plot([c b], [1/stat.c_g2 * c 1/stat.c_g2 * b], 'r-')
-plot([c b], [pram.Ta+1/stat.c_g1 * c pram.Ta+ 1/stat.c_g1 * b], 'r-')
-xline(x(x_pred), 'k:')
+xline(x(x_pred)./plamb, 'k:')
 
-xlabel('location (m)')
-ylabel('time (s)')
-title('Misfit at measured locations compared with evaluated prediction zone')
+xlabel('x / \lambda_p')
+ylabel('t / T_p')
+
+% imagesc(xd, t, C)
+% set(gca,'YDir','normal') 
+% colorbar
+% colormap(flipud(gray))
+% 
+% 
+% a = 0;
+% b = max(x(x_pred)) + a;
+% c = min(x(x_pred)) * 0;
+% plot([c b], [1/stat.c_g2 * c 1/stat.c_g2 * b], 'r-')
+% plot([c b], [pram.Ta+1/stat.c_g1 * c pram.Ta+ 1/stat.c_g1 * b], 'r-')
+% xline(x(x_pred), 'k:')
+% 
+% xlabel('location (m)')
+% ylabel('time (s)')
+% title('Misfit at measured locations compared with evaluated prediction zone')
 
 ylim([-5 pram.Ta+pram.window - 5])
+
+
+% writestruct(pram, 'structs/pram_a.csv')
+% writetable(struct2table(pram), 'pram_a.csv')
