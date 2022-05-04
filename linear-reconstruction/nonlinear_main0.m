@@ -1,19 +1,19 @@
 %% Shawn Albertson 4/6/22
 
-% Reconstruction using `n` probes
+% Reconstruction using CWM at `n` probes
 % Plot reconstruction at prediction gauge
 
 clear
 
 addpath '/Users/shawnalbertson/Documents/Research/wave-models/uri-waves/linear-reconstruction/functions'
 
-load '../data/mat/12.10.21/D.mat'
+load '../data/mat/12.10.21/E.mat'
 
 [pram, stat] = make_structs;
 
 pram.x = x;
 pram.mg = 3:6;
-pram.pg = 2;
+pram.pg = 1;
 
 
 % Preprocess to get spatiotemporal points and resampled observations
@@ -24,8 +24,29 @@ stat = subset_ng(pram, stat, t);
 
 stat = spectral_ng(pram, stat, eta);
 
-% Find frequency, wavenumber, amplitude, phase
-stat = decompose_ng(pram, stat, X, T, eta);
+figure
+hold on
+% Find frequency, wavenumber, linear coefficients
+stat = inversion_lin(pram, stat, X, T, eta);
+% plot([stat.a; stat.b])
+% 
+% % once a and b are initialized, do nonlinear
+% stat = inversion_cwm(pram, stat, X, T, eta);
+% plot([stat.a; stat.b])
+% 
+% stat = inversion_cwm(pram, stat, X, T, eta);
+% plot([stat.a; stat.b])
+
+% stat = inversion_cwm(pram, stat, X, T, eta);
+% plot([stat.a; stat.b])
+% 
+% stat = inversion_cwm(pram, stat, X, T, eta);
+% plot([stat.a; stat.b])
+
+legend('1', '2', '3', '4', '5')
+
+% % Find frequency, wavenumber, amplitude, phase
+% stat = decompose_ng(pram, stat, X, T, eta);
 
 [t_rec, r, stat] = reconstruct_ng(pram, stat, x, t);
 

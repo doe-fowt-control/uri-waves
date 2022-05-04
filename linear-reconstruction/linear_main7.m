@@ -7,13 +7,13 @@ clear
 
 addpath '/Users/shawnalbertson/Documents/Research/uri-waves/linear-reconstruction/functions'
 
-load '../data/mat/3.21.22/B.mat'
-
+% load '../data/mat/3.21.22/B.mat'
+load '../data/mat/12.10.21/D.mat'
 % Initialize according to values in make_structs function
 [pram, stat] = make_structs;
 
-pram.mg = 1;           % measurement gauge(s)
-pram.fs = 30;
+pram.mg = 6;           % measurement gauge(s)
+pram.fs = 32;
 pram.window = 10;
 
 % calibration
@@ -45,7 +45,7 @@ for ti = 1:1:length(t_list)
     stat = decompose_1g(pram, stat, eta);
     
     % List index of gauges to predict at
-    x_pred = [1,2,3,4];
+    x_pred = [1,2,3,4, 5, 6];
     
     for xi = 1:1:length(x_pred)
         pram.pg = x_pred(xi);

@@ -5,7 +5,7 @@
 
 clear
 
-addpath '/Users/shawnalbertson/Documents/Research/uri-waves/linear-reconstruction/functions'
+addpath '/Users/shawnalbertson/Documents/Research/wave-models/uri-waves/linear-reconstruction/functions'
 
 load '../data/mat/12.10.21/E.mat'
 

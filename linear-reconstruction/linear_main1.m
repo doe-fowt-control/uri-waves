@@ -7,7 +7,7 @@
 
 clear
 
-addpath '/Users/shawnalbertson/Documents/Research/uri-waves/linear-reconstruction/functions'
+addpath '/Users/shawnalbertson/Documents/Research/wave-models/uri-waves/linear-reconstruction/functions'
 
 % load '../data/mat/3.21.22/B.mat'
 load '../data/mat/12.10.21/D.mat'
@@ -19,7 +19,7 @@ load '../data/mat/12.10.21/D.mat'
 % pram.slope = cal(1, :);
 % pram.intercept = cal(2,:);
 
-pram.mg = 4;
+pram.mg = 2;
 pram.pg = 1;
 
 tr = pram.tr;            % initial time (s)
@@ -86,7 +86,7 @@ legend('prediction', ...
     )
 xlabel('time ( t / T_p )')
 ylabel('amplitude ( m / H_s )')
-title('Wave prediction using one gauge compared with measurement')
+title('Prediction at gauge 6 using measurement from gauge 3')
 
 % subplot(2,1,2)
 % plot(t, abs(r-p), 'r')

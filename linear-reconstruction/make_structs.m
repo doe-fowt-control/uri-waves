@@ -8,7 +8,7 @@ pram.Ta = 10;          % reconstruction assimilation time
 pram.nf = 40;           % number of frequencies
 
 pram.mu = .05;         % cutoff parameter (percentage of peak energy)
-pram.lam = 0.05;         % regularization parameter
+pram.lam = 0.5;         % regularization parameter
 
 pram.mg = 2:6;           % measurement gauge(s)
 pram.pg = 1;           % gauge to predict at

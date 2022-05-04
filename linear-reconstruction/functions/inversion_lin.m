@@ -1,4 +1,4 @@
-function stat = decompose_ng(pram, stat, X_, T_, eta_)
+function stat = inversion_lin(pram, stat, X_, T_, eta_)
 % stat.[w, k, a, b]
 
 nf = pram.nf;
