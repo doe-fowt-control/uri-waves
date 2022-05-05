@@ -1,7 +1,9 @@
 ## Overview
-This directory contains MATLAB functions to perform wave reconstruction and propagation using methods to be specified by the user. There are two main strategies employed depending on whether the user wants to use multiple wave gauges or a single wave gauge to perform reconstruction. While the overall implementation is quite similar, small changes are necessary - functions used for single wave gauge have the suffix `_1g`, while functions used for an arbitrary number of wave gauges use the suffix `_ng`.
+This directory contains MATLAB functions to perform wave reconstruction and propagation using methods to be specified by the user. There are multiple models implemented here with a common naming convention. There are two main strategies employed for linear reconstruction methods depending on whether the user wants to use multiple wave gauges or a single wave gauge to perform reconstruction. While the overall implementation is quite similar, small changes are necessary - functions used for single wave gauge have the suffix `_1g`, while functions used for an arbitrary number of wave gauges use the suffix `_ng`.
 
-The file `linear_main8.m` is the most up to date with implementation for multiple wave gauges, and `linear_main9.m` for a single wave gauge. The work flow (order of functions called) for each of these is now laid out, naming the function and its general role without the suffix. 
+The file `linear_ng_main0.m` is the most up to date with implementation for multiple wave gauges, and `linear_1g_main0.m` for a single wave gauge. The work flow (order of functions called) for each of these is now laid out, naming the function and its general role without the suffix. 
+
+The Choppy wave model [Nougier 2009] is also implemented.
 
 ## Workflow
 Here we describe the interaction and purpose functions used in the main scripts.
@@ -34,36 +36,42 @@ nx is number of wave gauges
 nt is number of temporal samples
 
 
-Save the folder `linear-reconstruction` at the same level as `data`. 
+Save the folder `post-process-models` at the same level as `data`. 
 
-Open linear_main#.m in MATLAB, and run.
+Open linear_#g_main#.m in MATLAB, and run.
 
 ## Description of main files
 
-**linear_main1**
+**linear_1g_main0**
 
 - Perform reconstruction using a single probe using FFT
 - Optionally plot the error between the wave propagation and measurement
 - Optionally visualize reconstruction and reconstruction error
 
-**linear_main2**
+**linear_1g_main1**
 
 - Perform reconstruction using a single probe using FFT  
 - Evaluate the error between the wave propagation and measurement across
 - full time series
 
-**linear_main5**
+**linear_1g_main2**
 
 - Perform reconstruction using a single probe using FFT and calculate
 - propagation error across multiple gauges
 
-**linear_main7**
+**linear_1g_main3**
 
 - Single gauge propagation using calibration factors for 3.21.22 data,
 - visualizing how prediction zone narrows as distance increases
 
-**linear_main8**
+**linear_ng_main0**
 
 - Perform reconstruction using n probes
 - Plot prediction at prediction gauge pram.pg
+
+**choppy_main0**
+- Nonlinear choppy wave model
+
+## References
+[1] F. Nouguier, C.-A. Guérin, and B. Chapron, “‘Choppy wave’ model for nonlinear gravity waves,” J. Geophys. Res., vol. 114, no. C9, p. C09012, Sep. 2009, doi: 10.1029/2008JC004984.
 
