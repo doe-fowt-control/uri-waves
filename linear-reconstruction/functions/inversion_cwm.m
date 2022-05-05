@@ -36,24 +36,20 @@ bk = (b' .* k.^(-1/2))' * ones(1, L);
 P = cos(psi_disp) .* (ones(1, L) + bk .* sin(psi)) - ak .* sin(psi) .* sin(psi_disp);
 Q = sin(psi_disp) .* (ones(1, L) + ak .* cos(psi)) - bk .* cos(psi) .* cos(psi_disp);
 
-% Z = [cos(psi_disp)' sin(psi_disp)'] * [P', Q'];
-% 
-% scaler = diag([k.^(-3/2), k.^(-3/2)]);
-% 
-% Z_check = Z*scaler;
-bloc11 = P*cos(psi_disp)';
-bloc12 = P*sin(psi_disp)';
-bloc21 = Q*cos(psi_disp)';
-bloc22 = Q*sin(psi_disp)';
+Z = [P; Q] * [cos(psi_disp)', sin(psi_disp)'];
+
+% bloc11 = P*cos(psi_disp)';
+% bloc12 = P*sin(psi_disp)';
+% bloc21 = Q*cos(psi_disp)';
+% bloc22 = Q*sin(psi_disp)';
 
 % preconditioner
+scaler = diag([k.^(-3/2), k.^(-3/2)]);
 
-alpha = diag(k'.^(-3/2));
-A = [bloc11 * alpha, bloc12 * alpha; bloc21 * alpha, bloc22 * alpha];
+A = Z * scaler;
+
 
 % construction of second matrix
-
-
 B1 = P * eta_obs;
 B2 = Q * eta_obs;
 

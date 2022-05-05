@@ -24,14 +24,14 @@ stat = subset_ng(pram, stat, t);
 
 stat = spectral_ng(pram, stat, eta);
 
-figure
-hold on
+% figure
+% hold on
 % Find frequency, wavenumber, linear coefficients
 stat = inversion_lin(pram, stat, X, T, eta);
 % plot([stat.a; stat.b])
 % 
-% % once a and b are initialized, do nonlinear
-% stat = inversion_cwm(pram, stat, X, T, eta);
+% once a and b are initialized, do nonlinear
+stat = inversion_cwm(pram, stat, X, T, eta);
 % plot([stat.a; stat.b])
 % 
 % stat = inversion_cwm(pram, stat, X, T, eta);
@@ -43,10 +43,8 @@ stat = inversion_lin(pram, stat, X, T, eta);
 % stat = inversion_cwm(pram, stat, X, T, eta);
 % plot([stat.a; stat.b])
 
-legend('1', '2', '3', '4', '5')
+% legend('1', '2', '3', '4', '5')
 
-% % Find frequency, wavenumber, amplitude, phase
-% stat = decompose_ng(pram, stat, X, T, eta);
 
 [t_rec, r, stat] = reconstruct_ng(pram, stat, x, t);
 
