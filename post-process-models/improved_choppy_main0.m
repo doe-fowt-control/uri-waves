@@ -1,6 +1,6 @@
-%% Shawn Albertson 4/6/22
+%% Shawn Albertson 5/5/22
 
-% Reconstruction using CWM at `n` probes
+% Reconstruction using ICWM at `n` probes
 % Plot reconstruction at prediction gauge
 
 clear
