@@ -1,4 +1,4 @@
-function stat = inversion_cwm(pram, stat, X_, T_, eta_)
+function stat = inversion_icwm(pram, stat, X_, T_, eta_)
 
 mg = pram.mg;
 nf = pram.nf;
@@ -23,6 +23,11 @@ t_stack = reshape(T, [1, numel(T)]);
 
 % Get corresponding wave height observations
 eta_obs = reshape(eta, [numel(eta), 1]);
+
+% ref. Desmars 2020
+% vso = sum((a.^2 + b.^2) .* w' .* k');
+vso = stat.Hs^2 * stat.k_p^(3/2) .* 9.81^(1/2);
+
 
 psi = k' * x_stack - w' * t_stack; % NxL
 

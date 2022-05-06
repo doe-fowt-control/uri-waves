@@ -5,7 +5,7 @@
 
 clear
 
-addpath '/Users/shawnalbertson/Documents/Research/wave-models/uri-waves/linear-reconstruction/functions'
+addpath '/Users/shawnalbertson/Documents/Research/wave-models/uri-waves/post-process-models/functions'
 
 load '../data/mat/12.10.21/D.mat'
 
@@ -14,6 +14,8 @@ load '../data/mat/12.10.21/D.mat'
 pram.x = x;
 pram.mg = 3:6;
 pram.pg = 2;
+pram.lam = 10;
+pram.nf = 100;
 
 
 % Preprocess to get spatiotemporal points and resampled observations
@@ -25,7 +27,7 @@ stat = subset_ng(pram, stat, t);
 stat = spectral_ng(pram, stat, eta);
 
 % Find frequency, wavenumber, amplitude, phase
-stat = decompose_ng(pram, stat, X, T, eta);
+stat = inversion_lin(pram, stat, X, T, eta);
 
 [t_rec, r, stat] = reconstruct_ng(pram, stat, x, t);
 

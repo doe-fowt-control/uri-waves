@@ -13,7 +13,7 @@ load '../data/mat/12.10.21/E.mat'
 
 pram.x = x;
 pram.mg = 3:6;
-pram.pg = 1;
+pram.pg = 2;
 
 
 % Preprocess to get spatiotemporal points and resampled observations
@@ -28,10 +28,10 @@ stat = spectral_ng(pram, stat, eta);
 % hold on
 % Find frequency, wavenumber, linear coefficients
 stat = inversion_lin(pram, stat, X, T, eta);
-plot([stat.a; stat.b])
+% plot([stat.a; stat.b])
 % 
 % once a and b are initialized, do nonlinear
-stat = inversion_cwm(pram, stat, X, T, eta);
+stat = inversion_icwm(pram, stat, X, T, eta);
 plot([stat.a; stat.b])
 
 stat = inversion_cwm(pram, stat, X, T, eta);
