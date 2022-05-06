@@ -35,7 +35,7 @@ if t_min > t_max
     fprintf("prediction boundary warning, t_min > t_max")
 end
 
-% prediction zone indices
+% prediction zone indices for full time series
 [~, pi1] = min(abs(t_min - t));
 [~, pi2] = min(abs(t_max - t));
 

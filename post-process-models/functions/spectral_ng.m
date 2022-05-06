@@ -60,6 +60,9 @@ hi_idx = zpos(v+1)-1;
 % xlim([0 15])
 % legend("integrated", "% of peak (continuous)")
 
+stat.w_spec = w;
+stat.pxx = pxx;
+
 % Calculate group velocities
 stat.c_g1 = 9.81 / (w(lo_idx)*2);
 stat.c_g2 = 9.81 / (w(hi_idx)*2);
@@ -73,6 +76,9 @@ stat.k_max = pi/min(abs(diff(x))) * 2;
 
 % peak period
 stat.pperiod = 1/(f(pxx == max(pxx)));
+
+% peak wavelength
+stat.k_p = (1/9.81) * (2*pi/stat.pperiod)^2;
 
 % zero-th moment as area under power curve
 stat.m0 = trapz(f, pxx);

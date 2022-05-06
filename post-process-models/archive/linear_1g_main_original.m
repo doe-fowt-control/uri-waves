@@ -7,7 +7,7 @@
 
 clear
 
-addpath '/Users/shawnalbertson/Documents/Research/wave-models/uri-waves/linear-reconstruction/functions'
+addpath '/Users/shawnalbertson/Documents/Research/wave-models/uri-waves/post-process-models/functions'
 
 % load '../data/mat/3.21.22/B.mat'
 load '../data/mat/12.10.21/D.mat'

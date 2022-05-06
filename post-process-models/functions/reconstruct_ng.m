@@ -26,7 +26,7 @@ t_max = tr + 1/c_g1 * (dx - min(x(mg)));
 stat.t_min = t_min;
 stat.t_max = t_max;
 
-% prediction zone indices
+% prediction zone indices for full time series
 [~, pi1] = min(abs(t_min - t));
 [~, pi2] = min(abs(t_max - t));
 

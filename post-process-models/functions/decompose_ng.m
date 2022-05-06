@@ -8,7 +8,6 @@ mg = pram.mg;
 k_min = stat.k_min;
 k_max = stat.k_max;
 
-
 i1 = stat.i1;
 i2 = stat.i2;
 
