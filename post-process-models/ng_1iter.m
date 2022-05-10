@@ -17,7 +17,6 @@ pram.pg = 2;
 pram.lam = 10;
 pram.nf = 100;
 
-
 % Preprocess to get spatiotemporal points and resampled observations
 [X, T, t, eta] = preprocess_ng(pram, data, time, x);
 
@@ -28,6 +27,7 @@ stat = spectral_ng(pram, stat, eta);
 
 % Find frequency, wavenumber, amplitude, phase
 stat = inversion_lin(pram, stat, X, T, eta);
+stat = inversion_cwm(pram, stat, X, T, eta);
 
 [t_rec, r, stat] = reconstruct_ng(pram, stat, x, t);
 

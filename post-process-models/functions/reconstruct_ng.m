@@ -47,3 +47,7 @@ s_b = b .* sin(k' * ones(1, length(t_rec)) .* dx - w' * t_rec);
 
 r = k.^(-3/2) * (s_a + s_b);
 
+
+
+
+
