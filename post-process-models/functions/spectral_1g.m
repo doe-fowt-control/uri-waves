@@ -1,4 +1,4 @@
-function stat = spectral(pram, stat, eta_)
+function stat = spectral_1g(pram, stat, eta_)
 % stat.[c_g1, c_g2, pperiod, Hs, m0]
 
 fs = pram.fs;

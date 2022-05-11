@@ -54,17 +54,16 @@ for ti = 1:1:length(t_list)
         pram.pg = x_pred(xi);
 
         % Propagate to new space / time region
-        [t, r, stat] = reconstruct_for_prediction_region(pram, stat, x, time);
-        
-        % Get reconstruction at prediction zone only
-        [t_pred, r_pred, stat] = reconstruct_1g_prediction_zone_only(pram, stat, x, time);
+        [t, r, stat] = reconstruct_fixed_1g(pram, stat, x, time);
 
-        
         % Get corresponding measured data
-        p = eta(stat.i1 - pram.window * pram.fs:stat.i2 + pram.window * pram.fs + 1, pram.pg);
-%         p = eta(stat.vi1:stat.vi2, pram.pg);
+        p = eta(stat.i1 - pram.window * pram.fs:stat.i2 + pram.window * pram.fs + 1, pram.pg)';
 
-        e_pred = abs(eta(stat.pi1:stat.pi2, pram.pg) - r_pred) / stat.Hs;
+        % isolate regions within prediction zone to find error
+        r_pred = r(stat.rpi1:stat.rpi2);
+        p_pred = eta(stat.pi1:stat.pi2, pram.pg)';
+
+        e_pred = abs(p_pred - r_pred) / stat.Hs;
 
         % mean misfit for single realization, single location
         % need one for all locations/ realizations
