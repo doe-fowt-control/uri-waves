@@ -1,8 +1,8 @@
-function [t_rec, r, stat] = reconstruct_1g(pram, stat, x, t, setting)
+function [t_rec, r, stat] = reconstruct_fixed_ng(pram, stat, x, t, setting)
 % return reconstructed time series at location of specified prediction
-% gauge `pram.pg`. Time series based on prediction zone at individual gauge
-% setting = 0 : time window is adjusted based on prediction
-% setting = 1 : time window is fixed relative to reconstruction time
+% gauge `pram.pg`. Time series is dependent on calculated prediction zone
+%
+%
 
 pg = pram.pg;
 mg = pram.mg;
@@ -18,11 +18,11 @@ c_g1 = stat.c_g1;
 c_g2 = stat.c_g2;
 
 % spatial location of interest
-dx = abs(x(pg) - x(mg));
+dx = x(pg);
 
 % prediction zone time boundary relative to the beginning of assimilation
-t_min = dx / c_g2;
-t_max = dx / c_g1 + Ta;
+t_min = (dx - max(x(mg))) / c_g2;
+t_max = (dx - min(x(mg))) / c_g1 + Ta;
 
 t_min = 1/fs*round(t_min*fs);
 t_max = 1/fs*round(t_max*fs);
@@ -41,20 +41,15 @@ end
 stat.pi1 = pi1;
 stat.pi2 = pi2;
 
-% visualization indices
+% visualization time indices
 window = pram.window;
 window = 1/fs*round(window*fs);
 
-stat.vi1 = pi1 - round(window * fs);
-stat.vi2 = pi2 + round(window * fs);
+stat.vi1 = pi1 - round(window * pram.fs);
+stat.vi2 = pi2 + round(window * pram.fs);
 
-% create time series around prediction window based on setting
-if setting == 0
-    t_target = t_min:1/fs:t_max;
-elseif setting == 1
-    t_target = 0:1/fs:Ta;
-end
-
+% create time series around fixed window
+t_target = t(stat.i1 : stat.i2+1)';
 t0 = [];
 t1 = [];
 if window ~= 0
@@ -75,9 +70,5 @@ stat.rpi2 = rpi2;
 s_a = a .* cos(k' * ones(1, length(t_rec)) .* dx - w' * t_rec);
 s_b = b .* sin(k' * ones(1, length(t_rec)) .* dx - w' * t_rec);
 
-% THIS WOULD BE K^(-3/2) * [...] FOR LEAST SQUARES INVERSION
-r = ones(size(k)) * (s_a + s_b);
-
-
-
+r = k.^(-3/2) * (s_a + s_b);
 

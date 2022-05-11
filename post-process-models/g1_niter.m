@@ -15,10 +15,10 @@ pram.mg = 6;           % measurement gauge(s)
 pram.fs = 32;
 pram.window = 10;
 
-% calibration
-load '../data/mat/3.21.22/cal.mat'
-pram.slope = cal(1, :);
-pram.intercept = cal(2,:);
+% % calibration
+% load '../data/mat/3.21.22/cal.mat'
+% pram.slope = cal(1, :);
+% pram.intercept = cal(2,:);
 
 
 % Preprocess to get spatiotemporal points and resampled observations
@@ -29,9 +29,6 @@ x = x - min(x);
 
 pram.tr = 60;
 stat = spectral_1g(pram, stat, eta);
-
-fprintf(['slow: ' num2str(stat.c_g2) ' - '])
-fprintf(['fast: ' (num2str(stat.c_g1)) '\n'])
 
 t_list = 60:20:140;
 % List index of gauges to predict at
@@ -59,6 +56,7 @@ for ti = 1:1:length(t_list)
         % Get corresponding measured data
         p = eta(stat.i1 - pram.window * pram.fs:stat.i2 + pram.window * pram.fs + 1, pram.pg)';
 
+        
         % isolate regions within prediction zone to find error
         r_pred = r(stat.rpi1:stat.rpi2);
         p_pred = eta(stat.pi1:stat.pi2, pram.pg)';

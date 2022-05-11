@@ -1,4 +1,4 @@
-function [stat] = subset2(param, stat, t)
+function [stat] = subset_1g(param, stat, t)
 % indices of full series to be used in reconstruction
 
 tr = param.tr;
