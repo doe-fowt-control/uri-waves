@@ -18,21 +18,24 @@ pram.lam = 10;
 pram.nf = 100;
 
 % Preprocess to get spatiotemporal points and resampled observations
-[X, T, t, eta] = preprocess_ng(pram, data, time, x);
+stat = preprocess_ng(pram, stat, data, time, x);
 
 % Select subset of data for remaining processing
-stat = subset_ng(pram, stat, t);
+stat = subset_ng(pram, stat);
 
-stat = spectral_ng(pram, stat, eta);
+stat = spectral_ng(pram, stat);
 
 % Find frequency, wavenumber, amplitude, phase
-stat = inversion_lin(pram, stat, X, T, eta);
-% stat = inversion_cwm(pram, stat, X, T, eta);
+stat = inversion_lin(pram, stat);
+stat = inversion_cwm(pram, stat);
 
-[t_rec, r, stat] = reconstruct_ng(pram, stat, x, t, 0);
+[t_rec, r, stat] = reconstruct_ng(pram, stat, 0);
 
 % designate measured signal as p
-p = eta(stat.vi1: stat.vi2, pram.pg);
+p = stat.eta(stat.vi1: stat.vi2, pram.pg);
+
+
+
 
 figure
 hold on

@@ -8,6 +8,7 @@ addpath '/Users/shawnalbertson/Documents/Research/wave-models/uri-waves/post-pro
 
 % load '../data/mat/3.21.22/B.mat'
 load '../data/mat/12.10.21/D.mat'
+
 % Initialize according to values in make_structs function
 [pram, stat] = make_structs;
 
@@ -22,13 +23,14 @@ pram.window = 10;
 
 
 % Preprocess to get spatiotemporal points and resampled observations
-[time, eta] = preprocess_1g(pram, data, time, x);
-
-
-x = x - min(x);
+stat = preprocess_1g(pram, stat, data, time, x);
 
 pram.tr = 60;
-stat = spectral_1g(pram, stat, eta);
+stat = spectral_1g(pram, stat);
+
+t = stat.t;
+eta = stat.eta;
+x = stat.x;
 
 t_list = 60:20:140;
 % List index of gauges to predict at
@@ -41,25 +43,24 @@ for ti = 1:1:length(t_list)
     pram.tr = t_list(ti);
 
     % Select subset of data for remaining processing
-    stat = subset_1g(pram, stat, time);
+    stat = subset_1g(pram, stat);
     
     % Find frequency, wavenumber, amplitude, phase
-    stat = decompose_1g(pram, stat, eta);
+    stat = decompose_1g(pram, stat);
    
     % iterate across locations
     for xi = 1:1:length(x_pred)
         pram.pg = x_pred(xi);
 
         % Propagate to new space / time region
-        [t, r, stat] = reconstruct_1g(pram, stat, x, time, 1);
+        [t_rec, r, stat] = reconstruct_1g(pram, stat, 1);
 
         % Get corresponding measured data
-        p = eta(stat.i1 - pram.window * pram.fs:stat.i2 + pram.window * pram.fs + 1, pram.pg)';
+        p = stat.eta(stat.i1 - pram.window * pram.fs:stat.i2 + pram.window * pram.fs + 1, pram.pg)';
 
-        
         % isolate regions within prediction zone to find error
         r_pred = r(stat.rpi1:stat.rpi2);
-        p_pred = eta(stat.pi1:stat.pi2, pram.pg)';
+        p_pred = stat.eta(stat.pi1:stat.pi2, pram.pg)';
 
         e_pred = abs(p_pred - r_pred) / stat.Hs;
 
@@ -101,7 +102,7 @@ for xi = 1:1:length(x_pred)
 end
 
 % create 2D array for error vis
-C = zeros(length(t), length(xd));
+C = zeros(length(t_rec), length(xd));
 C(:, i_list) = ee_vis;
 
 % make bars wider
@@ -120,7 +121,7 @@ c_g2 = stat.c_g2;
 Ta = pram.Ta;
 
 % imagesc plot scaled by peak period and peak wavelength
-imagesc(xd./plamb, t./pperiod, C, [0, 0.5])
+imagesc(xd./plamb, t_rec./pperiod, C, [0, 0.5])
 set(gca,'YDir','normal') 
 colorbar
 colormap(flipud(gray))

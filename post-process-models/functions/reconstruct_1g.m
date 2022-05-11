@@ -1,8 +1,11 @@
-function [t_rec, r, stat] = reconstruct_1g(pram, stat, x, t, setting)
+function [t_rec, r, stat] = reconstruct_1g(pram, stat, setting)
 % return reconstructed time series at location of specified prediction
 % gauge `pram.pg`. Time series based on prediction zone at individual gauge
 % setting = 0 : time window is adjusted based on prediction
 % setting = 1 : time window is fixed relative to reconstruction time
+
+x = stat.x;
+t = stat.t;
 
 pg = pram.pg;
 mg = pram.mg;

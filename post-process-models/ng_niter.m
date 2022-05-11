@@ -11,7 +11,6 @@ load '../data/mat/12.10.21/D.mat'
 % Initialize according to values in make_structs function
 [pram, stat] = make_structs;
 
-pram.x = x;
 pram.pg = 1;
 pram.mg = 5:6;           % measurement gauge(s)
 pram.fs = 32;
@@ -19,13 +18,11 @@ pram.window = 10;
 
 
 % Preprocess to get spatiotemporal points and resampled observations
-[X, T, time, eta] = preprocess_ng(pram, data, time, x);
-
-x = x - min(x);
+stat = preprocess_ng(pram, stat, data, time, x);
 
 pram.tr = 60;
-stat = subset_ng(pram, stat, time);
-stat = spectral_ng(pram, stat, eta);
+stat = subset_ng(pram, stat);
+stat = spectral_ng(pram, stat);
 
 t_list = 60:20:140;
 % List index of gauges to predict at
@@ -38,24 +35,24 @@ for ti = 1:1:length(t_list)
     pram.tr = t_list(ti);
 
     % Select subset of data for remaining processing
-    stat = subset_ng(pram, stat, time);
+    stat = subset_ng(pram, stat);
     
     % Find frequency, wavenumber, amplitude, phase
-    stat = decompose_ng(pram, stat, X, T, eta);
+    stat = inversion_lin(pram, stat);
    
     % iterate across locations
     for xi = 1:1:length(x_pred)
         pram.pg = x_pred(xi);
 
         % Propagate to new space / time region
-        [t, r, stat] = reconstruct_ng(pram, stat, x, time, 1);
+        [t, r, stat] = reconstruct_ng(pram, stat, 1);
 
         % Get corresponding measured data
-        p = eta(stat.i1 - pram.window * pram.fs:stat.i2 + pram.window * pram.fs + 1, pram.pg)';
+        p = stat.eta(stat.i1 - pram.window * pram.fs:stat.i2 + pram.window * pram.fs + 1, pram.pg)';
 
         % isolate regions within prediction zone to find error
         r_pred = r(stat.rpi1:stat.rpi2);
-        p_pred = eta(stat.pi1:stat.pi2, pram.pg)';
+        p_pred = stat.eta(stat.pi1:stat.pi2, pram.pg)';
 
         e_pred = abs(p_pred - r_pred) / stat.Hs;
 

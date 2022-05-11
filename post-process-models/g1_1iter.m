@@ -24,19 +24,20 @@ pram.window = 2;
 
 
 % Preprocess to get spatiotemporal points and resampled observations
-[t, eta] = preprocess_1g(pram, data, time, x);
+stat = preprocess_1g(pram, stat, data, time, x);
+
 
 % Select subset of data for remaining processing
-stat = subset_1g(pram, stat, t);
+stat = subset_1g(pram, stat);
 
-stat = spectral_1g(pram, stat, eta);
+stat = spectral_1g(pram, stat);
 
 % Find frequency, wavenumber, amplitude, phase
-stat = decompose_1g(pram, stat, eta);
+stat = decompose_1g(pram, stat);
 
-[t_rec, r, stat] = reconstruct_1g(pram, stat, x, t, 0);
+[t_rec, r, stat] = reconstruct_1g(pram, stat, 0);
 
-p = eta(stat.vi1: stat.vi2, pram.pg);
+p = stat.eta(stat.vi1: stat.vi2, pram.pg);
 
 figure
 % subplot(2,1,1)

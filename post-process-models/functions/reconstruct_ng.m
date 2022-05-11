@@ -1,8 +1,10 @@
-function [t_rec, r, stat] = reconstruct_ng(pram, stat, x, t, setting)
+function [t_rec, r, stat] = reconstruct_ng(pram, stat, setting)
 % return reconstructed time series at location of specified prediction
 % gauge `pram.pg`. Time series is dependent on calculated prediction zone
 %
 %
+x = stat.x;
+t = stat.t;
 
 pg = pram.pg;
 mg = pram.mg;

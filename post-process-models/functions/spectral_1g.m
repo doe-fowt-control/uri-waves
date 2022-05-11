@@ -1,5 +1,6 @@
-function stat = spectral_1g(pram, stat, eta_)
+function stat = spectral_1g(pram, stat)
 % stat.[c_g1, c_g2, pperiod, Hs, m0]
+eta = stat.eta;
 
 fs = pram.fs;
 mg = pram.mg;
@@ -18,7 +19,7 @@ si2 = round(tr) * fs;
 % [pxx, f] = pwelch(eta_(si1:si2, mg), wwindow, noverlap, nfft, fs);
 
 % Calculate once to determine length
-[pxx, f] = pwelch(eta_(si1:si2, mg), wwindow, noverlap, nfft, fs);
+[pxx, f] = pwelch(eta(si1:si2, mg), wwindow, noverlap, nfft, fs);
 
 w = 2*pi*f;
 

@@ -1,5 +1,9 @@
-function stat = inversion_lin(pram, stat, X_, T_, eta_)
+function stat = inversion_lin(pram, stat)
 % stat.[w, k, a, b]
+
+X_ = stat.X;
+T_ = stat.T;
+eta_ = stat.eta;
 
 nf = pram.nf;
 mg = pram.mg;

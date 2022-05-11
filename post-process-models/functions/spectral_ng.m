@@ -1,7 +1,9 @@
-function stat = spectral_ng(pram, stat, eta_)
+function stat = spectral_ng(pram, stat)
 % stat.[c_g1, c_g2, pperiod, Hs, m0]
 
-x = pram.x;
+eta = stat.eta;
+x = stat.x;
+
 fs = pram.fs;
 mg = pram.mg;
 mu = pram.mu;
@@ -14,7 +16,7 @@ si1 = stat.si1;
 si2 = stat.si2;
 
 % Calculate PSD once to determine length
-[pxx1, f] = pwelch(eta_(si1:si2, mg(1)), wwindow, noverlap, nfft, fs);
+[pxx1, f] = pwelch(eta(si1:si2, mg(1)), wwindow, noverlap, nfft, fs);
 
 nx = length(mg);        % number of wave gauges used for measurement
 npxx = length(pxx1);    % number of psd points
@@ -26,7 +28,7 @@ pxxt(:, 1) = pxx1;
 % Iterate through remaining wave gauges, average all
 
 for g = 2:1:nx
-    [pxxt(:, g), f] = pwelch(eta_(si1:si2, mg(g)), wwindow, noverlap, nfft, fs);
+    [pxxt(:, g), f] = pwelch(eta(si1:si2, mg(g)), wwindow, noverlap, nfft, fs);
 end
 
 pxx = mean(pxxt, 2);

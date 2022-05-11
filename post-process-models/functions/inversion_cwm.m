@@ -1,4 +1,8 @@
-function stat = inversion_cwm(pram, stat, X_, T_, eta_)
+function stat = inversion_cwm(pram, stat)
+
+X_ = stat.X;
+T_ = stat.T;
+eta_ = stat.eta;
 
 mg = pram.mg;
 nf = pram.nf;

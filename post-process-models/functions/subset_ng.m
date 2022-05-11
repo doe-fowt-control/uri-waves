@@ -1,6 +1,8 @@
-function [stat] = subset_ng(pram, stat, t)
+function [stat] = subset_ng(pram, stat)
 % indices of full series to be used in reconstruction
 % indices of full series to be used as spectral data
+
+t = stat.t;
 
 tr = pram.tr;
 Ta = pram.Ta;
