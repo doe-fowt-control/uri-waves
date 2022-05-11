@@ -1,4 +1,4 @@
-function stat = preprocess_1g(pram, stat, data, time, x)
+function stat = preprocess_ng(pram, stat, data, time, x)
 % Trim data before waves fully develop and after waves stop
 % Center on mean
 % Resample at desired frequency
@@ -28,7 +28,15 @@ data = data - mean(data);
 eta = data(1: fs_old / fs_new :end, :);
 t = time(1: fs_old / fs_new :end);
 
+stat.x = x;
 stat.t = t;
 stat.eta = eta;
-stat.x = x;
+
+% make spatiotemporal samples if multiple wave gauges
+if length(pram.mg) ~= 1
+    % spatiotemporal samples
+    [X, T] = meshgrid(x, t);
+    stat.X = X;
+    stat.T = T;
+end
 

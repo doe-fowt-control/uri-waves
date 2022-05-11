@@ -23,7 +23,7 @@ pram.window = 10;
 
 
 % Preprocess to get spatiotemporal points and resampled observations
-stat = preprocess_1g(pram, stat, data, time, x);
+stat = preprocess_ng(pram, stat, data, time, x);
 
 pram.tr = 60;
 stat = spectral_1g(pram, stat);
