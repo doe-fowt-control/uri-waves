@@ -12,8 +12,8 @@ noverlap = pram.noverlap;
 nfft = pram.nfft;
 
 % indices for spectral acquisition
-si1 = round((tr - ts)) * fs;
-si2 = round(tr) * fs;
+si1 = stat.si1;
+si2 = stat.si2;
 
 % PSD
 % [pxx, f] = pwelch(eta_(si1:si2, mg), wwindow, noverlap, nfft, fs);

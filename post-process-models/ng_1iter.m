@@ -18,10 +18,10 @@ pram.lam = 10;
 pram.nf = 100;
 
 % Preprocess to get spatiotemporal points and resampled observations
-stat = preprocess_ng(pram, stat, data, time, x);
+stat = preprocess(pram, stat, data, time, x);
 
 % Select subset of data for remaining processing
-stat = subset_ng(pram, stat);
+stat = subset(pram, stat);
 
 stat = spectral_ng(pram, stat);
 

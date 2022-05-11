@@ -18,10 +18,10 @@ pram.window = 10;
 
 
 % Preprocess to get spatiotemporal points and resampled observations
-stat = preprocess_ng(pram, stat, data, time, x);
+stat = preprocess(pram, stat, data, time, x);
 
 pram.tr = 60;
-stat = subset_ng(pram, stat);
+stat = subset(pram, stat);
 stat = spectral_ng(pram, stat);
 
 t_list = 60:20:140;
@@ -35,7 +35,7 @@ for ti = 1:1:length(t_list)
     pram.tr = t_list(ti);
 
     % Select subset of data for remaining processing
-    stat = subset_ng(pram, stat);
+    stat = subset(pram, stat);
     
     % Find frequency, wavenumber, amplitude, phase
     stat = inversion_lin(pram, stat);
