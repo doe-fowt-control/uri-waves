@@ -1,4 +1,4 @@
-function [t_rec, r, stat] = reconstruct_window_ng(pram, stat, x, t, setting)
+function [t_rec, r, stat] = reconstruct_ng(pram, stat, x, t, setting)
 % return reconstructed time series at location of specified prediction
 % gauge `pram.pg`. Time series is dependent on calculated prediction zone
 %
@@ -48,8 +48,20 @@ window = 1/fs*round(window*fs);
 stat.vi1 = pi1 - round(window * pram.fs);
 stat.vi2 = pi2 + round(window * pram.fs);
 
-% create time series around prediction window
-t_rec = t(stat.vi1:stat.vi2)';
+% create time series based on setting
+if setting == 0
+    t_rec = t(stat.vi1:stat.vi2)';
+elseif setting == 1
+    t_target = t(stat.i1 : stat.i2+1)';
+    t0 = [];
+    t1 = [];
+    if window ~= 0
+        t0 = min(t_target) - window : 1/fs : min(t_target) - 1/fs;
+        t1 = max(t_target) + 1/fs : 1/fs : window + max(t_target);
+    end
+
+    t_rec = [t0, t_target, t1];
+end
 
 % prediction zone indices relative to reconstructed block
 [~, rpi1] = min(abs(t_min - t_rec));
@@ -63,6 +75,7 @@ s_a = a .* cos(k' * ones(1, length(t_rec)) .* dx - w' * t_rec);
 s_b = b .* sin(k' * ones(1, length(t_rec)) .* dx - w' * t_rec);
 
 r = k.^(-3/2) * (s_a + s_b);
+
 
 
 

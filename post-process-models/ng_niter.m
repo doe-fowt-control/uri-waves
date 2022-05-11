@@ -13,7 +13,7 @@ load '../data/mat/12.10.21/D.mat'
 
 pram.x = x;
 pram.pg = 1;
-pram.mg = 2:6;           % measurement gauge(s)
+pram.mg = 5:6;           % measurement gauge(s)
 pram.fs = 32;
 pram.window = 10;
 
@@ -48,7 +48,7 @@ for ti = 1:1:length(t_list)
         pram.pg = x_pred(xi);
 
         % Propagate to new space / time region
-        [t, r, stat] = reconstruct_fixed_ng(pram, stat, x, time, 1);
+        [t, r, stat] = reconstruct_ng(pram, stat, x, time, 1);
 
         % Get corresponding measured data
         p = eta(stat.i1 - pram.window * pram.fs:stat.i2 + pram.window * pram.fs + 1, pram.pg)';

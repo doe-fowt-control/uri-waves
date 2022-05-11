@@ -29,7 +29,7 @@ stat = spectral_ng(pram, stat, eta);
 stat = inversion_lin(pram, stat, X, T, eta);
 % stat = inversion_cwm(pram, stat, X, T, eta);
 
-[t_rec, r, stat] = reconstruct_window_ng(pram, stat, x, t);
+[t_rec, r, stat] = reconstruct_ng(pram, stat, x, t, 0);
 
 % designate measured signal as p
 p = eta(stat.vi1: stat.vi2, pram.pg);
