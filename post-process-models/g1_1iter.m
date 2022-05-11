@@ -34,7 +34,7 @@ stat = spectral_1g(pram, stat, eta);
 % Find frequency, wavenumber, amplitude, phase
 stat = decompose_1g(pram, stat, eta);
 
-[t_rec, r, stat] = reconstruct_window_1g(pram, stat, x, t);
+[t_rec, r, stat] = reconstruct_1g(pram, stat, x, t, 0);
 
 p = eta(stat.vi1: stat.vi2, pram.pg);
 

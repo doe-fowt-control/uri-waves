@@ -1,26 +1,26 @@
-function [t_rec, r, stat] = reconstruct_window_1g(pram, stat, x, t)
+function [t_rec, r, stat] = reconstruct_window_1g(pram, stat, x, t, setting)
 % return reconstructed time series at location of specified prediction
 % gauge `pram.pg`. Time series based on prediction zone at individual gauge
+% setting = 0 : time window is adjusted based on prediction
+% setting = 1 : time window is fixed relative to reconstruction time
+
+pg = pram.pg;
+mg = pram.mg;
+tr = pram.tr;
+Ta = pram.Ta;
+fs = pram.fs;
 
 w = stat.w;
 k = stat.k;
 a = stat.a;
 b = stat.b;
-
-% spatial location of interest
-pg = pram.pg;
-mg = pram.mg;
-
-dx = abs(x(pg) - x(mg));
-
-% calculate prediction zone time boundary, rounded to sampling frequency
-tr = pram.tr;
-Ta = pram.Ta;
-fs = pram.fs;
-
 c_g1 = stat.c_g1;
 c_g2 = stat.c_g2;
 
+% spatial location of interest
+dx = abs(x(pg) - x(mg));
+
+% calculate prediction zone time boundary, rounded to sampling frequency
 t_min = dx/c_g2;
 t_max = dx/c_g1 + Ta;
 
@@ -48,8 +48,13 @@ window = 1/fs*round(window*fs);
 stat.vi1 = pi1 - round(window * fs);
 stat.vi2 = pi2 + round(window * fs);
 
-% create time series around prediction gauge prediction window
-t_target = t_min:1/fs:t_max;
+% create time series around prediction window based on setting
+if setting == 0
+    t_target = t_min:1/fs:t_max;
+elseif setting == 1
+    t_target = 0:1/fs:Ta;
+end
+
 t0 = [];
 t1 = [];
 if window ~= 0
@@ -58,6 +63,13 @@ if window ~= 0
 end
 
 t_rec = [t0, t_target, t1];
+
+% prediction zone indices relative to reconstructed block
+[~, rpi1] = min(abs(t_min - t_rec));
+[~, rpi2] = min(abs(t_max - t_rec));
+
+stat.rpi1 = rpi1;
+stat.rpi2 = rpi2;
 
 % reconstruct based on surface representation
 s_a = a .* cos(k' * ones(1, length(t_rec)) .* dx - w' * t_rec);

@@ -18,6 +18,3 @@ stat.k = k;
 stat.w = w;
 stat.a = a;
 stat.b = b;
-
-stat.A = A;
-stat.phi = phi;
