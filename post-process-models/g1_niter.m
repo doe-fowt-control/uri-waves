@@ -54,7 +54,7 @@ for ti = 1:1:length(t_list)
         pram.pg = x_pred(xi);
 
         % Propagate to new space / time region
-        [t_rec, r, stat] = reconstruct_1g(pram, stat, 1);
+        [t_rec, r, stat] = reconstruct(pram, stat, 1);
 
         % Get corresponding measured data
         p = stat.eta(stat.i1 - pram.window * pram.fs:stat.i2 + pram.window * pram.fs + 1, pram.pg)';

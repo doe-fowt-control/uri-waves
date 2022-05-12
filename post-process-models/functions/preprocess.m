@@ -1,4 +1,4 @@
-function stat = preprocess_ng(pram, stat, data, time, x)
+function stat = preprocess(pram, stat, data, time, x)
 % Trim data before waves fully develop and after waves stop
 % Center on mean
 % Resample at desired frequency

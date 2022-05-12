@@ -34,7 +34,7 @@ stat = spectral(pram, stat);
 % Find frequency, wavenumber, amplitude, phase
 stat = inversion_lin(pram, stat);
 
-[t_rec, r, stat] = reconstruct_1g(pram, stat, 0);
+[t_rec, r, stat] = reconstruct(pram, stat, 0);
 
 p = stat.eta(stat.vi1: stat.vi2, pram.pg);
 
