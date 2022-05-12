@@ -79,7 +79,7 @@ elseif length(mg) == 1
 
     % fixed window based on assimilation time
     elseif setting == 1
-        t_target = 0:1/fs:Ta;
+        t_target = 0:1/fs:Ta - 1/fs;
     end
 end
 

@@ -12,15 +12,13 @@ load '../data/mat/12.10.21/D.mat'
 % Initialize according to values in make_structs function
 [pram, stat] = make_structs;
 
-pram.mg = 6;           % measurement gauge(s)
-pram.fs = 32;
-pram.window = 10;
-
 % % calibration
 % load '../data/mat/3.21.22/cal.mat'
 % pram.slope = cal(1, :);
 % pram.intercept = cal(2,:);
 
+pram.mg = 6;            % measurement gauge(s)
+pram.window = 10;
 
 % Preprocess to get spatiotemporal points and resampled observations
 stat = preprocess(pram, stat, data, time, x);
@@ -29,19 +27,15 @@ pram.tr = 60;
 stat = subset(pram, stat);
 stat = spectral(pram, stat);
 
-t = stat.t;
-eta = stat.eta;
-x = stat.x;
-
-t_list = 60:20:140;
-% List index of gauges to predict at
+% times and gauges at which to predict
+t_pred = 60:20:140;
 x_pred = [1,2,3,4,5,6];
 
-misfit = zeros([length(t_list), length(x_pred)]);
+misfit = zeros([length(t_pred), length(x_pred)]);
 
 % iterate across realizations
-for ti = 1:1:length(t_list)
-    pram.tr = t_list(ti);
+for ti = 1:1:length(t_pred)
+    pram.tr = t_pred(ti);
 
     % Select subset of data for remaining processing
     stat = subset(pram, stat);
@@ -115,7 +109,6 @@ end
 stat.plamb = 9.81 * stat.pperiod^2 / 2 / pi;
 
 pperiod = stat.pperiod;
-% pperiod = 1.132;
 plamb = stat.plamb;
 c_g1 = stat.c_g1;
 c_g2 = stat.c_g2;

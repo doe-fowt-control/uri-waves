@@ -10,7 +10,7 @@ pram.nf = 100;           % number of frequencies
 pram.mu = .05;         % cutoff parameter (percentage of peak energy)
 pram.lam = 10;         % regularization parameter
 
-pram.mg = 2:6;           % measurement gauge(s)
+pram.mg = 2:6;         % measurement gauge(s)
 pram.pg = 1;           % gauge to predict at
 
 pram.fs = 32;          % sampling frequency

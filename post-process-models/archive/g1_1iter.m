@@ -9,6 +9,7 @@ addpath '/Users/shawnalbertson/Documents/Research/wave-models/uri-waves/post-pro
 
 load '../data/mat/12.10.21/D.mat'
 
+% all calculations happen in these 8 lines
 [pram, stat] = make_structs;
 stat = preprocess(pram, stat, data, time, x);
 stat = subset(pram, stat);
@@ -17,15 +18,20 @@ stat = inversion_lin(pram, stat);
 stat = inversion_cwm(pram, stat);
 [t_rec, r, stat] = reconstruct(pram, stat, 0);
 p = stat.eta(stat.vi1: stat.vi2, pram.pg);
+% % %
 
 
-figure
-hold on
+
 if length(pram.mg) ~= 1
     shift = pram.tr;
 elseif length(pram.mg) == 1
     shift = pram.Ta;
 end
+
+
+figure
+hold on
+
 plot((t_rec - shift) ./ stat.pperiod, r ./ stat.Hs, 'linewidth', 1)
 plot((t_rec - shift) ./ stat.pperiod, p ./ stat.Hs, 'linewidth', 1)
 xline(0, 'k--', 'LineWidth', 1)
