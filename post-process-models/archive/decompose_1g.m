@@ -1,13 +1,15 @@
 function [stat] = decompose_1g(pram, stat)
 
-eta = stat.eta;
-
 mg = pram.mg;
+
+eta_ = stat.eta;
 
 i1 = stat.i1;
 i2 = stat.i2;
 
-eta = eta(i1:i2, mg);
+
+
+eta = eta_(i1:i2, mg);
 
 [A, phi, w] = fft_decomp(pram, eta);
 

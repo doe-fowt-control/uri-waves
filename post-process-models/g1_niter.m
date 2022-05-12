@@ -47,7 +47,7 @@ for ti = 1:1:length(t_list)
     stat = subset(pram, stat);
     
     % Find frequency, wavenumber, amplitude, phase
-    stat = decompose_1g(pram, stat);
+    stat = inversion_lin(pram, stat);
    
     % iterate across locations
     for xi = 1:1:length(x_pred)
