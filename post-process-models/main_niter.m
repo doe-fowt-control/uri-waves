@@ -1,12 +1,13 @@
-%% Shawn Albertson 3/1/22
+%% Shawn Albertson 5/12/22
 
-% Reconstruction using `1` probe
-% Plot reconstruction at prediction gauges for multiple instances
+% Full wave model across multiple realizations
+% Optionally change the number of wave gauges used and inversion techniques
+
 clear
 
 addpath '/Users/shawnalbertson/Documents/Research/wave-models/uri-waves/post-process-models/functions'
 
-% load '../data/mat/3.21.22/B.mat'
+% load '../data/mat/3.21.22/D.mat'
 load '../data/mat/12.10.21/D.mat'
 
 % Initialize according to values in make_structs function
@@ -16,47 +17,47 @@ load '../data/mat/12.10.21/D.mat'
 % load '../data/mat/3.21.22/cal.mat'
 % pram.slope = cal(1, :);
 % pram.intercept = cal(2,:);
+% pram.fs = 30;
 
-pram.mg = 6;           % measurement gauge(s)
-pram.window = 10;
+% (re)establish prediction parameters
+pram.mg = 5:6;          % measurement gauge(s)
+pram.window = 10;       % visualization region
+
+% times and gauges at which to predict
+t_pred = 60:20:160;
+x_pred = [1,2,3,4,5,6];
 
 % Preprocess to get spatiotemporal points and resampled observations
 stat = preprocess(pram, stat, data, time, x);
 
-pram.tr = 60;
+% Do spectral calculations once
 stat = subset(pram, stat);
 stat = spectral(pram, stat);
 
-% times and gauges at which to predict
-t_pred = 60:20:140;
-x_pred = [1,2,3,4,5,6];
-
+% Initialize misfit array
 misfit = zeros([length(t_pred), length(x_pred)]);
 
-% iterate across realizations
+% Iterate across realizations
 for ti = 1:1:length(t_pred)
     pram.tr = t_pred(ti);
 
-    % Select subset of data for remaining processing
     stat = subset(pram, stat);
-    
-    % Find frequency, wavenumber, amplitude, phase
     stat = inversion_lin(pram, stat);
     stat = inversion_cwm(pram, stat);
-   
+    stat = inversion_cwm(pram, stat);
+
+
     % iterate across locations
     for xi = 1:1:length(x_pred)
         pram.pg = x_pred(xi);
 
-        % Propagate to new space / time region
+        % Reconstruct and get corresponding measurement
         [t_rec, r, stat] = reconstruct(pram, stat, 1);
-
-        % Get corresponding measured data
-        p = stat.eta(stat.i1 - pram.window * pram.fs:stat.i2 + pram.window * pram.fs, pram.pg)';
+        p = stat.eta(stat.vi1 : stat.vi2, pram.pg)';
 
         % isolate regions within prediction zone to find error
-        r_pred = r(stat.rpi1:stat.rpi2);
-        p_pred = stat.eta(stat.pi1:stat.pi2, pram.pg)';
+        r_pred = r(stat.rpi1:stat.rpi2)';
+        p_pred = stat.eta(stat.pi1:stat.pi2, pram.pg);
 
         e_pred = abs(p_pred - r_pred) / stat.Hs;
 
@@ -152,6 +153,6 @@ xline(x(x_pred)./plamb, 'k:')
 
 xlabel('x / \lambda_p')
 ylabel('t / T_p')
-title('Misfit for steepness 2%')
+title('Misfit for steepness 4%')
 
 % ylim([-3 15])

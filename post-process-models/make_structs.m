@@ -14,7 +14,7 @@ pram.mg = 2:6;         % measurement gauge(s)
 pram.pg = 1;           % gauge to predict at
 
 pram.fs = 32;          % sampling frequency
-pram.tr = 120;         % reconstruction time
+pram.tr = 60;         % reconstruction time
 
 pram.window = 2;       % number of seconds outside of prediction to use for visualization
 pram.np = 15;          % number of periods to predict for

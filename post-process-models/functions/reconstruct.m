@@ -19,6 +19,8 @@ a = stat.a;
 b = stat.b;
 c_g1 = stat.c_g1;
 c_g2 = stat.c_g2;
+i1 = stat.i1;
+i2 = stat.i2;
 
 if length(mg) ~= 1
     % spatial location of interest
@@ -58,18 +60,21 @@ stat.pi2 = pi2;
 window = pram.window;
 window = 1/fs*round(window*fs);
 
-stat.vi1 = pi1 - round(window * fs);
-stat.vi2 = pi2 + round(window * fs);
-
-% create base for time series
+% create base for time series based on number of gauges and setting
 if length(mg) ~= 1
     % moving window based on prediction zone
     if setting == 0 
         t_target = t(stat.pi1 : stat.pi2)';
+
+        stat.vi1 = pi1 - round(window * fs);
+        stat.vi2 = pi2 + round(window * fs);
     
     % fixed window based on assimilation time
     elseif setting == 1 
-        t_target = t(stat.i1 : stat.i2)';
+        t_target = t(i1 : i2)';
+
+        stat.vi1 = i1 - round(window * fs);
+        stat.vi2 = i2 + round(window * fs);
     end
 
 elseif length(mg) == 1
@@ -77,9 +82,15 @@ elseif length(mg) == 1
     if setting == 0
         t_target = t_min:1/fs:t_max;
 
+        stat.vi1 = pi1 - round(window * fs);
+        stat.vi2 = pi2 + round(window * fs);
+
     % fixed window based on assimilation time
     elseif setting == 1
         t_target = 0:1/fs:Ta - 1/fs;
+
+        stat.vi1 = i1 - round(window * fs);
+        stat.vi2 = i2 + round(window * fs);        
     end
 end
 
@@ -93,10 +104,14 @@ end
 
 t_rec = [t0, t_target, t1];
 
-
 % prediction zone indices relative to reconstructed block
-[~, rpi1] = min(abs(t_min - t_rec));
-[~, rpi2] = min(abs(t_max - t_rec));
+if length(mg) ~= 1
+    [~, rpi1] = min(abs(t_min + tr - Ta - t_rec));
+    [~, rpi2] = min(abs(t_max + tr - Ta - t_rec));
+elseif length(mg) == 1
+    [~, rpi1] = min(abs(t_min - t_rec));
+    [~, rpi2] = min(abs(t_max - t_rec));
+end
 
 stat.rpi1 = rpi1;
 stat.rpi2 = rpi2;

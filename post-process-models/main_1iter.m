@@ -7,12 +7,20 @@ clear
 
 addpath '/Users/shawnalbertson/Documents/Research/wave-models/uri-waves/post-process-models/functions'
 
+% load '../data/mat/3.21.22/D.mat'
 load '../data/mat/12.10.21/D.mat'
 
+% Initialize according to values in make_structs function
 [pram, stat] = make_structs;
 
-pram.mg = 2:3;
-pram.pg = 1;
+% % calibration
+% load '../data/mat/3.21.22/cal.mat'
+% pram.slope = cal(1, :);
+% pram.intercept = cal(2,:);
+% pram.fs = 30;
+
+pram.mg = 1:2;
+pram.pg = 3;
 
 % Preprocess to get spatiotemporal points and resampled observations
 stat = preprocess(pram, stat, data, time, x);
@@ -68,15 +76,15 @@ xlabel('time ( t / T_p )')
 ylabel('amplitude ( m / H_s )')
 title('Wave prediction using five gauges compared with measurement')
 
-% Plot misfit epsilon for single instance
-figure
-plot(t_rec - shift, abs(r-p)/stat.Hs, 'b', 'linewidth', 0.5)
-xline(0, 'k--', 'linewidth', 1) % reconstruction time
-xline(stat.t_min - pram.Ta, 'k-', 'linewidth', 2)
-xline(stat.t_max - pram.Ta, 'k-', 'linewidth', 2)
-legend('error', 'reconstruction time', 'prediction zone')
-ylim([0 1])
-xlabel('time (s)')
-ylabel('absolute difference')
-title('Error')
+% % Plot misfit epsilon for single instance
+% figure
+% plot(t_rec - shift, abs(r-p)/stat.Hs, 'b', 'linewidth', 0.5)
+% xline(0, 'k--', 'linewidth', 1) % reconstruction time
+% xline(stat.t_min - pram.Ta, 'k-', 'linewidth', 2)
+% xline(stat.t_max - pram.Ta, 'k-', 'linewidth', 2)
+% legend('error', 'reconstruction time', 'prediction zone')
+% ylim([0 1])
+% xlabel('time (s)')
+% ylabel('absolute difference')
+% title('Error')
 
