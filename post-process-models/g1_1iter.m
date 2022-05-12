@@ -26,11 +26,10 @@ pram.window = 2;
 % Preprocess to get spatiotemporal points and resampled observations
 stat = preprocess(pram, stat, data, time, x);
 
-
 % Select subset of data for remaining processing
 stat = subset(pram, stat);
 
-stat = spectral_1g(pram, stat);
+stat = spectral(pram, stat);
 
 % Find frequency, wavenumber, amplitude, phase
 stat = decompose_1g(pram, stat);

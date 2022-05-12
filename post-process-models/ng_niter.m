@@ -22,7 +22,7 @@ stat = preprocess(pram, stat, data, time, x);
 
 pram.tr = 60;
 stat = subset(pram, stat);
-stat = spectral_ng(pram, stat);
+stat = spectral(pram, stat);
 
 t_list = 60:20:140;
 % List index of gauges to predict at

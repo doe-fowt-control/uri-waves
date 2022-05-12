@@ -23,7 +23,7 @@ stat = preprocess(pram, stat, data, time, x);
 % Select subset of data for remaining processing
 stat = subset(pram, stat);
 
-stat = spectral_ng(pram, stat);
+stat = spectral(pram, stat);
 
 % Find frequency, wavenumber, amplitude, phase
 stat = inversion_lin(pram, stat);

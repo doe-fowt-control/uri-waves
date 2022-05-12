@@ -27,7 +27,7 @@ stat = preprocess(pram, stat, data, time, x);
 
 pram.tr = 60;
 stat = subset(pram, stat);
-stat = spectral_1g(pram, stat);
+stat = spectral(pram, stat);
 
 t = stat.t;
 eta = stat.eta;
