@@ -1,10 +1,17 @@
 function stat = inversion_cwm(pram, stat)
 
+mg = pram.mg;
+
+if length(mg) == 1
+    fprintf('WARNING \n Choppy not compatible with single gauge \n Continuing without choppy \n')
+    return
+end
+
 X_ = stat.X;
 T_ = stat.T;
 eta_ = stat.eta;
 
-mg = pram.mg;
+
 nf = pram.nf;
 
 k = stat.k;
