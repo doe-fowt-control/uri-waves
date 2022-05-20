@@ -8,7 +8,7 @@ clear
 addpath '/Users/shawnalbertson/Documents/Research/wave-models/uri-waves/post-process-models/functions'
 
 % load '../data/mat/3.21.22/D.mat'
-load '../data/mat/12.10.21/D.mat'
+load '../data/mat/12.10.21/E.mat'
 
 % Initialize according to values in make_structs function
 [pram, stat] = make_structs;
@@ -19,8 +19,10 @@ load '../data/mat/12.10.21/D.mat'
 % pram.intercept = cal(2,:);
 % pram.fs = 30;
 
-pram.mg = 1:2;
-pram.pg = 3;
+% (re)establish prediction parameters
+pram.mg = 2:6;
+pram.pg = 1;
+% pram.fs = 8;
 
 % Preprocess to get spatiotemporal points and resampled observations
 stat = preprocess(pram, stat, data, time, x);
@@ -32,7 +34,7 @@ stat = subset(pram, stat);
 stat = spectral(pram, stat);
 
 % Inversion
-stat = inversion_lin(pram, stat);
+stat = inversion_lwt(pram, stat);
 stat = inversion_cwm(pram, stat);
 
 % Reconstruct at prediction gauge at adjustable time-frame 

@@ -22,6 +22,7 @@ load '../data/mat/12.10.21/D.mat'
 % (re)establish prediction parameters
 pram.mg = 5:6;          % measurement gauge(s)
 pram.window = 10;       % visualization region
+pram.fs = 16;
 
 % times and gauges at which to predict
 t_pred = 60:20:160;
@@ -42,9 +43,9 @@ for ti = 1:1:length(t_pred)
     pram.tr = t_pred(ti);
 
     stat = subset(pram, stat);
-    stat = inversion_lin(pram, stat);
-    stat = inversion_cwm(pram, stat);
-    stat = inversion_cwm(pram, stat);
+    stat = inversion_lwt_cdr(pram, stat);
+%     stat = inversion_cwm(pram, stat);
+%     stat = inversion_cwm(pram, stat);
 
 
     % iterate across locations
@@ -138,7 +139,7 @@ elseif length(mg) == 1
 end
 
 % imagesc plot scaled by peak period and peak wavelength
-imagesc(xd./plamb, (t_rec)./pperiod, C, [0, 0.4])
+imagesc(xd./plamb, (t_rec)./pperiod, C, [0, 0.2])
 set(gca,'YDir','normal') 
 colorbar
 colormap(flipud(gray))

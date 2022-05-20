@@ -1,4 +1,4 @@
-function stat = inversion_lin(pram, stat)
+function stat = inversion_lwt(pram, stat)
 
 mg = pram.mg;
 
