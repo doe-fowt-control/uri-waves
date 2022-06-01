@@ -1,34 +1,4 @@
 /*
- * Title: MovePositionAbsolute
- *
- * Objective:
- *    This example demonstrates control of a ClearPath motor in Step and
- *    Direction mode.
- *
- * Description:
- *    This example enables a ClearPath then commands a series of repeating
- *    absolute position moves to the motor.
- *
- * Requirements:
- * 1. A ClearPath motor must be connected to Connector M-0.
- * 2. The connected ClearPath motor must be configured through the MSP software
- *    for Step and Direction mode (In MSP select Mode>>Step and Direction).
- * 3. The ClearPath motor must be set to use the HLFB mode "ASG-Position
- *    w/Measured Torque" with a PWM carrier frequency of 482 Hz through the MSP
- *    software (select Advanced>>High Level Feedback [Mode]... then choose
- *    "ASG-Position w/Measured Torque" from the dropdown, make sure that 482 Hz
- *    is selected in the "PWM Carrier Frequency" dropdown, and hit the OK
- *    button).
- * 4. Set the Input Format in MSP for "Step + Direction".
- *
- * ** Note: Homing is optional, and not required in this operational mode or in
- *    this example. This example makes positive absolute position moves,
- *    assuming any homing move occurs in the negative direction.
- *
- * ** Note: Set the Input Resolution in MSP the same as your motor's Positioning
- *    Resolution spec if you'd like the pulses sent by ClearCore to command a
- *    move of the same number of Encoder Counts, a 1:1 ratio.
- *
  * Links:
  * ** ClearCore Documentation: https://teknic-inc.github.io/ClearCore-library/
  * ** ClearCore Manual: https://www.teknic.com/files/downloads/clearcore_user_manual.pdf
@@ -45,39 +15,56 @@
 #include "math.h"
 #include <Bounce2.h>
 
-
-// DEFINE MOTOR
-  // Specifies which motor to move.
-#define motor ConnectorM0
+// DEFINE SERIAL
   // Select the baud rate to match the target serial device
 #define baudRate 9600
   // Specify which serial to use: ConnectorUsb, ConnectorCOM0, or ConnectorCOM1.
 #define SerialPort ConnectorUsb
+
+// DEFINE MOTOR
+  // Specifies which motor to move.
+#define motor ConnectorM0
   // Define the velocity and acceleration limits to be used for each move
 int32_t velocityLimit = 5000; // pulses per sec
 int32_t accelerationLimit = 50000; // pulses per sec^2
-  // Helper function
+
+// DEFINE FUNCTIONS
 bool MoveAbsolutePosition(int32_t position);
+bool MoveAtVelocity(int32_t velocity);
+//void stateMessage(char message);
+//void stateUpdate(int
 
 // DEFINE SWITCHES
-#define BOUNCE_PIN0 A11
-#define BOUNCE_PIN1 A12
-#define BOUNCE_PIN_STATE A10
+#define LIMIT_PIN0 A11
+#define LIMIT_PIN1 A12
+#define STATE_PIN A10
 
-  // INSTANTIATE two Bounce OBJECT, one for each switch
-Bounce bounce0 = Bounce();
-Bounce bounce1 = Bounce();
-Bounce bounceState = Bounce();
-
-  // SET A VARIABLE TO STORE THE SWITCH STATE
-int switchState0 = HIGH;
-int switchState1 = HIGH;
+// Bounce OBJECTs, one for each switch
+Bounce limitSwitch0 = Bounce();
+Bounce limitSwitch1 = Bounce();
+Bounce stateSwitch = Bounce();
 
 // DEFINE LOGIC
 int state = 0;
+int sendFlag = 0;
+
+//boolean flags set to true when limit is reached
+bool home0 = false;
+bool home1 = false;
 
 void setup() {
-
+  
+// SERIAL SETUP
+    // Sets up serial communication and waits up to 5 seconds for a port to open.
+    // Serial communication is not required for this example to run.
+    SerialPort.Mode(Connector::USB_CDC);
+    SerialPort.Speed(baudRate);
+    uint32_t timeout = 5000;
+    uint32_t startTime = Milliseconds();
+    SerialPort.PortOpen();
+    while (!SerialPort && Milliseconds() - startTime < timeout) {
+        continue;
+    }
 
 // MOTOR SETUP
     // Sets the input clocking rate. This normal rate is ideal for ClearPath
@@ -94,16 +81,6 @@ void setup() {
     motor.VelMax(velocityLimit);
     // Set the maximum acceleration for each move
     motor.AccelMax(accelerationLimit);
-    // Sets up serial communication and waits up to 5 seconds for a port to open.
-    // Serial communication is not required for this example to run.
-    SerialPort.Mode(Connector::USB_CDC);
-    SerialPort.Speed(baudRate);
-    uint32_t timeout = 5000;
-    uint32_t startTime = Milliseconds();
-    SerialPort.PortOpen();
-    while (!SerialPort && Milliseconds() - startTime < timeout) {
-        continue;
-    }
     // Enables the motor; homing will begin automatically if enabled
     motor.EnableRequest(true);
     SerialPort.SendLine("Motor Enabled");
@@ -115,232 +92,257 @@ void setup() {
     SerialPort.SendLine("Motor Ready");
 
 // SWITCHES SETUP
-bounce0.attach( BOUNCE_PIN0 ,  INPUT_PULLUP ); // USE INTERNAL PULL-UP
-bounce1.attach( BOUNCE_PIN1 ,  INPUT_PULLUP ); // USE INTERNAL PULL-UP
-bounceState.attach( BOUNCE_PIN_STATE ,  INPUT_PULLUP ); // USE INTERNAL PULL-UP
-
-// DEBOUNCE INTERVAL IN MILLISECONDS
-bounce0.interval(10); // interval in ms
-bounce1.interval(10); // interval in ms
-bounceState.interval(10);
+  limitSwitch0.attach( LIMIT_PIN0 ,  INPUT_PULLUP ); // USE INTERNAL PULL-UP
+  limitSwitch1.attach( LIMIT_PIN1 ,  INPUT_PULLUP ); // USE INTERNAL PULL-UP
+  stateSwitch.attach( STATE_PIN ,  INPUT_PULLUP ); // USE INTERNAL PULL-UP
+  
+  // DEBOUNCE INTERVAL IN MILLISECONDS
+  limitSwitch0.interval(10); // interval in ms
+  limitSwitch1.interval(10); // interval in ms
+  stateSwitch.interval(10);
 }
 
 void loop() {
 
 
   
-// not running
+// STARTUP
   if ( state == 0 ) {
-    SerialPort.SendLine("In startup state");
-    bounceState.update();
-    if ( bounceState.changed() ) {
-      int debouncedInput = bounceState.read();
-      if ( debouncedInput == LOW ) {
-        state = 1;
-        SerialPort.SendLine("Entering homing state");
-      }
-    }
+    stateMessage("STARTUP");
+    // go to new state when switch is pressed
+    stateUpdate(1);
   }
 
-
+// HOMING
   if ( state == 1 ) {
-    SerialPort.SendLine("In homing state");
-    
-    // homing
-    bounceState.update();
-    if ( bounceState.changed() ) {
-      int debouncedInput = bounceState.read();
-      if ( debouncedInput == LOW ) {
-        state = 2;
-        SerialPort.SendLine("Entering passive state");
-      }
-    }
-  }
+    stateMessage("HOMING");
+  
+    int home_found = 0;
+    int relative_position = 4000; // the size of the first move
+    int move_distance = 10; // the number of steps to move for every count
 
+
+    // both start as true
+    if ( !home0 && !home1 ) {
+      //SerialPort.SendLine("Both False"); 
+
+      // move in a direction, slowly
+      MoveAtVelocity(800);         
+
+      limitSwitch0.update();
+      if ( limitSwitch0.changed() ) {
+        int input = limitSwitch0.read();
+        if ( input == HIGH ) {
+          motor.MoveStopAbrupt();
+          SerialPort.SendLine("Limit found");
+          delay(1000);
+          home0 = true;
+          
+        }
+      }
+      
+      limitSwitch1.update();
+      if ( limitSwitch1.changed() ) {
+        int input = limitSwitch1.read();
+        if ( input == HIGH ) {
+          motor.MoveStopAbrupt();
+          SerialPort.SendLine("Limit found");
+          delay(1000);
+          home1 = true;
+        }
+      }            
+
+    
+    }
+
+    // only one should be false after initial press
+    if ( (home0 && !home1) || (!home0 && home1) ) {
+        // SerialPort.SendLine("One False");
+        // move the opposite direction
+        motor.Move(-relative_position);
+        delay(500);
+
+        while ( home_found == 0 ) {
+          
+          limitSwitch0.update();
+          if ( limitSwitch0.changed() ) {
+            int input = limitSwitch0.read();
+            if ( input == HIGH ) {
+              motor.MoveStopAbrupt();
+              SerialPort.SendLine("Limit found");
+              delay(1000);
+              home0 = true;
+              home_found = 1;
+            }
+          }
+          
+          limitSwitch1.update();
+          if ( limitSwitch1.changed() ) {
+            int input = limitSwitch1.read();
+            if ( input == HIGH ) {
+              motor.MoveStopAbrupt();
+              SerialPort.SendLine("Limit found");
+              delay(1000);
+              home1 = true;
+              home_found = 1;
+            }
+          }
+                      
+          motor.Move(-move_distance);
+          delay(25);
+          relative_position = relative_position + move_distance;
+          //SerialPort.SendLine(relative_position);
+
+        }
+    }
+
+    if ( home0 && home1 ) {
+      int relative_home = round(0.5 * relative_position);
+      motor.Move(relative_home);
+      delay(5000);
+      
+      //motor.EnableRequest(false);
+      //delay(2000);
+     // motor.EnableRequest(true);
+     // motor.ClearAlerts();
+      motor.PositionRefSet(0);
+      delay(1000);
+      state = 2;
+      sendFlag = 0;
+    }      
+
+          /*
+          // check the status of the switches
+          limitSwitch0.update();
+          limitSwitch1.update();
+      
+          // if either has changed
+          if ( limitSwitch0.changed() || limitSwitch1.changed() ) {
+            
+            // check to see if either is pressed (HIGH)
+            int input0 = limitSwitch0.read();
+            int input1 = limitSwitch1.read();
+            if ( input0 == HIGH || input1 == HIGH ) {
+              // stop moving
+              motor.MoveStopAbrupt();
+              SerialPort.SendLine("Limit found!");
+              delay(1000);
+*/
+
+        // check to see if the stateSwitch is pressed at any point before the limit is found
+        stateUpdate(2);
+  }
+   
+
+// PASSIVE
   if ( state == 2 ) {
-    SerialPort.SendLine("In passive state");
+    stateMessage("PASSIVE");   
 
-    //MoveAbsolutePosition(0);
-   // MoveAtVelocity(0);
+    MoveAtVelocity(0);
     
-    bounceState.update();
-    if ( bounceState.changed() ) {
-      int debouncedInput = bounceState.read();
-      if ( debouncedInput == LOW ) {
-        state = 3;
-        SerialPort.SendLine("Entering motion state");
-      }
-    }
+    // move on if switch is pressed
+    stateUpdate(3);
     
-  }
-
-  if ( state == 3 ) {
-    SerialPort.SendLine("In motion state");
-
-// motion
-    int currentTime = millis();
-    float currentTimeSec = currentTime * .001;
-    float desiredPos = 400 * sin(currentTimeSec);
-    motor.Move(desiredPos, MotorDriver::MOVE_TARGET_ABSOLUTE);
-    
-    
-    bounceState.update();
-    if ( bounceState.changed() ) {
-      int debouncedInput = bounceState.read();
-      if ( debouncedInput == LOW ) {
-        state = 2;
-        SerialPort.SendLine("Entering passive state");
-      }
-    }
-
-    bounce0.update();
-    if ( bounce0.changed() ) {
-      int debouncedInput = bounceState.read();
-      if ( debouncedInput == LOW ) {
-        state = 8;
-        SerialPort.SendLine("Limit Switch Triggered!!");      
-      }
-    }
-
-    bounce1.update();
-    if ( bounce1.changed() ) {
-      int debouncedInput = bounceState.read();
-      if ( debouncedInput == LOW ) {
-        state = 8;
-        SerialPort.SendLine("Limit Switch Triggered!!");      
-      }
-    }
-  }  
-
-  if ( state == 8 ) {
-    ConnectorM0.EnableRequest(false);
-    SerialPort.SendLine("Motor disabled");   
   }
 
   
+// MOVING
+  if ( state == 3 ) {
+    stateMessage("MOVING");    
+
+    if (motor.StatusReg().bit.AlertsPresent) {
+        Serial.println("Motor status: 'In Alert'. Move Canceled.");
+    }    
+
+    float currentTimeSec = millis() * 0.001;
+    float freqHz = 0.4;
+    float freqRad = 6.2832 * freqHz;
+    int A = 400;
+    float desiredPos = A * sin(freqRad * currentTimeSec);
+    float desiredVel = A * freqRad * cos(freqRad * currentTimeSec);
 
     /*
-     *     // check switch 0
-    bounce0.update();
-    if ( bounce0.changed() ) {
-      MoveSinusoid(400);
-      runState = !runState;
-      SerialPort.SendLine("Limit Switch Triggered!!");
-    }
+    int currentTime = millis();
+    float currentTimeSec = currentTime * .001 * 6.2832 * .4; // convert ms to s then multiply by 2*pi and divide by period
+    float desiredPos = 400 * cos(currentTimeSec);
+    */
 
-    // check switch 1
-    bounce1.update();
-    if ( bounce1.changed() ) {
-      MoveSinusoid(400);
-      runState = !runState;
-      SerialPort.SendLine("Limit Switch Triggered!!");
-    }
-     * 
-     * 
-     */
+    motor.Move(desiredPos, StepGenerator::MOVE_TARGET_ABSOLUTE); 
+    //motor.MoveVelocity(desiredVel);
+    //SerialPort.SendLine(desiredPos);
     
-/*
-// running
-  if ( runState == 1 ) {
-    // check switch 0
-    bounce0.update();
-    if ( bounce0.changed() ) {
-      MoveAtVelocity(0);
-      runState = !runState;
-      SerialPort.SendLine("Limit Switch Triggered!!");
-    }
-    
-    bounce1.update();
-    if ( bounce1.changed() ) {
-      MoveAtVelocity(0);
-      runState = !runState;
-      SerialPort.SendLine("Limit Switch Triggered!!");
-    }
+    // go back to state 2 if state switch is pressed
+    stateUpdate( 2 );
 
-    
+    // disable if limit switch is triggered
+    limitDisable( limitSwitch0 );
+    limitDisable( limitSwitch1 );
 
-  
+  }  
+
+// DISABLED
+  if ( state == 8 ) {
+    motor.EnableRequest(false);
+
+    if ( sendFlag == 0 ) {
+      SerialPort.SendLine("Motor disabled");
+      sendFlag = 1;
+    }     
+
+    // motor.ClearAlerts();
+    
   }
-
-    SerialPort.Send("position:");
-    SerialPort.Send(desiredPos);
-    SerialPort.Send(",");
-    SerialPort.Send("velocity:");
-    SerialPort.SendLine(desiredVel);
-    
-    float desiredVel = 800 * cos(currentTimeSec);
-    
-*/
-
-
-    
-// ON POWER UP FIND LIMIT SWITCHES
-// INITIATE SLOW MOVE IN ONE DIRECTION UNTIL SWITCH IS PRESSED
-// MOVE BACKWARDS A KNOWN AMOUNT TO AVOID PRESSING THE BUTTON FOREVER
-// STOP MOVING
-// FIND CURRENT POSITION 0
-// MOVE IN OTHER DIRECTION UNTIL THE OTHER SWITCH IS PRESSED
-// MOVE BACK, STOP MOVING, FIND CURRENT POSITION 1
-// FIND AVERAGE OF TWO POSITIONS
-// MOVE THERE
-// CALL THAT POSITION ZERO
-// MOVE ON TO MAIN MOTION
-
-
-/*    
-  if (hasRun == false)
-    {
-       //hasRun = true;
-       //MoveAbsolutePosition(0);
-    }
-*/
-  delay(5);
 }
 
-// DUMPSTER
-/*
- * 
-    float angle_rad = currentTime / 1000;
-    uint32_t desiredPos = -800 * sin(millis() / 1000);
-    MoveAbsolutePosition(desiredPos);
-
-    SerialPort.Send("angle: ");
-    SerialPort.SendLine(angle_rad);
-    SerialPort.Send("desired position: ");
-    SerialPort.SendLine(desiredPos);
-    
 
 
-    uint32_t desiredPos = -800 * sin(millis() / 1000);
-    SerialPort.Send("position: ");
-    SerialPort.SendLine(desiredPos);    
-    
-    SerialPort.Send("millis: ");
-    SerialPort.Send(currentTime);
-    SerialPort.SendLine();    
-
-    SerialPort.Send("time: ");
-    SerialPort.SendLine(currentTimeSec, 3);
-// including velocity does not do great things
-          // motor.MoveVelocity(desiredVel);
- * 
- */
 
 
-/*------------------------------------------------------------------------------
- * MoveAbsolutePosition
- *
- *    Command step pulses to move the motor's current position to the absolute
- *    position specified by "position"
- *    Prints the move status to the USB serial port
- *    Returns when HLFB asserts (indicating the motor has reached the commanded
- *    position)
- *
- * Parameters:
- *    int position  - The absolute position, in step pulses, to move to
- *
- * Returns: True/False depending on whether the move was successfully triggered.
- */
+
+void stateMessage( const char* message ) {
+    if ( sendFlag == 0 ) {
+      SerialPort.SendLine(message);
+      sendFlag = 1;
+    }
+}
+
+void stateUpdate( int newState ) {
+    stateSwitch.update();
+    if ( stateSwitch.changed() ) {
+      int debouncedInput = stateSwitch.read();
+      if ( debouncedInput == HIGH ) {
+        state = newState;
+        sendFlag = 0;
+      }
+    }
+}
+
+bool homingFlag( Bounce &theSwitch ) {
+  theSwitch.update();
+  if ( theSwitch.changed() ) {
+    int input = theSwitch.read();
+    if ( input == HIGH ) {
+      motor.MoveStopAbrupt();
+      SerialPort.SendLine("Limit found");
+      delay(1000);
+      return true;
+    }
+  }
+}
+
+void limitDisable( Bounce &theSwitch ) {
+    theSwitch.update();
+    if ( theSwitch.changed() ) {
+      SerialPort.SendLine("switch registered");
+      int debouncedInput = theSwitch.read();
+      if ( debouncedInput == HIGH ) {
+        SerialPort.SendLine("Limit Switch Triggered!!");
+        state = 8;
+        sendFlag = 0;      
+      }
+    }  
+}
+
 
 bool MoveSinusoid(int magnitude) {
     int currentTime = millis();
@@ -374,7 +376,21 @@ bool MoveAtVelocity(int velocity) {
     //Serial.println("At Speed");
     return true; 
 }
- 
+
+/*------------------------------------------------------------------------------
+ * MoveAbsolutePosition
+ *
+ *    Command step pulses to move the motor's current position to the absolute
+ *    position specified by "position"
+ *    Prints the move status to the USB serial port
+ *    Returns when HLFB asserts (indicating the motor has reached the commanded
+ *    position)
+ *
+ * Parameters:
+ *    int position  - The absolute position, in step pulses, to move to
+ *
+ * Returns: True/False depending on whether the move was successfully triggered.
+ */
 bool MoveAbsolutePosition(int32_t position) {
     // Check if an alert is currently preventing motion
     if (motor.StatusReg().bit.AlertsPresent) {
@@ -391,6 +407,29 @@ bool MoveAbsolutePosition(int32_t position) {
         continue;
     }
     SerialPort.SendLine("Move Done");
+    return true;
+}
+
+bool MoveDistance(int distance) {
+    // Check if an alert is currently preventing motion
+    if (motor.StatusReg().bit.AlertsPresent) {
+        Serial.println("Motor status: 'In Alert'. Move Canceled.");
+        return false;
+    }
+
+    Serial.print("Moving distance: ");
+    Serial.println(distance);
+
+    // Command the move of incremental distance
+    motor.Move(distance);
+
+    // Waits for HLFB to assert (signaling the move has successfully completed)
+    Serial.println("Moving.. Waiting for HLFB");
+    while (!motor.StepsComplete() || motor.HlfbState() != MotorDriver::HLFB_ASSERTED) {
+        continue;
+    }
+
+    Serial.println("Move Done");
     return true;
 }
 //--------------------------------------------------------------------------
