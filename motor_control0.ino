@@ -52,6 +52,10 @@ int sendFlag = 0;
 bool home0 = false;
 bool home1 = false;
 
+// for the motor to initialize time to 0
+bool started = false;
+float startTimeSec = millis();
+
 void setup() {
   
 // SERIAL SETUP
@@ -108,6 +112,7 @@ void loop() {
   
 // STARTUP
   if ( state == 0 ) {
+    // send startup message
     stateMessage("STARTUP");
     // go to new state when switch is pressed
     stateUpdate(1);
@@ -115,11 +120,13 @@ void loop() {
 
 // HOMING
   if ( state == 1 ) {
+    // send homing message
     stateMessage("HOMING");
   
-    int home_found = 0;
-    int relative_position = 4000; // the size of the first move
-    int move_distance = 10; // the number of steps to move for every count
+    int home_found = 0; // logical used for final motion
+    int initial_move = 4000; // the size of the first move
+    int relative_position = initial_move; // to keep track of the position as it moves
+    int incremental_move = 10; // the number of steps to move for every count
 
 
     // both start as true
@@ -129,6 +136,7 @@ void loop() {
       // move in a direction, slowly
       MoveAtVelocity(800);         
 
+      // check both switches, and reset their home value to true if touched
       limitSwitch0.update();
       if ( limitSwitch0.changed() ) {
         int input = limitSwitch0.read();
@@ -158,10 +166,10 @@ void loop() {
     // only one should be false after initial press
     if ( (home0 && !home1) || (!home0 && home1) ) {
         // SerialPort.SendLine("One False");
-        // move the opposite direction
-        motor.Move(-relative_position);
-        delay(500);
-
+        // move the opposite direction a large amount at first to speed things up
+        motor.Move(-initial_move);
+        delay(50);
+        // use the logical home_found to move until the next switch is pressed
         while ( home_found == 0 ) {
           
           limitSwitch0.update();
@@ -187,50 +195,35 @@ void loop() {
               home_found = 1;
             }
           }
-                      
-          motor.Move(-move_distance);
+
+          // move until switch is pressed with short delay
+          motor.Move(-incremental_move);
           delay(25);
-          relative_position = relative_position + move_distance;
-          //SerialPort.SendLine(relative_position);
+          // keep track of where you are by adding up all the moves you make
+          relative_position = relative_position + incremental_move;
+          
 
         }
     }
 
     if ( home0 && home1 ) {
+      // find how far the current location is from the zero point
       int relative_home = round(0.5 * relative_position);
       motor.Move(relative_home);
-      delay(5000);
-      
-      //motor.EnableRequest(false);
-      //delay(2000);
-     // motor.EnableRequest(true);
-     // motor.ClearAlerts();
-      motor.PositionRefSet(0);
       delay(1000);
+
+      // set postion for StepGenerator class to reference later during moves
+      motor.PositionRefSet(0);
+      SerialPort.SendLine("Home found");
+      delay(1000);
+
+      // go to passive state
       state = 2;
       sendFlag = 0;
     }      
 
-          /*
-          // check the status of the switches
-          limitSwitch0.update();
-          limitSwitch1.update();
-      
-          // if either has changed
-          if ( limitSwitch0.changed() || limitSwitch1.changed() ) {
-            
-            // check to see if either is pressed (HIGH)
-            int input0 = limitSwitch0.read();
-            int input1 = limitSwitch1.read();
-            if ( input0 == HIGH || input1 == HIGH ) {
-              // stop moving
-              motor.MoveStopAbrupt();
-              SerialPort.SendLine("Limit found!");
-              delay(1000);
-*/
-
-        // check to see if the stateSwitch is pressed at any point before the limit is found
-        stateUpdate(2);
+      // check to see if the stateSwitch is pressed at any point before home is found
+      stateUpdate(2);
   }
    
 
@@ -238,9 +231,10 @@ void loop() {
   if ( state == 2 ) {
     stateMessage("PASSIVE");   
 
-    MoveAtVelocity(0);
+    // use StepGenerator class to move to absolute 0
+    motor.Move(0, StepGenerator::MOVE_TARGET_ABSOLUTE);
     
-    // move on if switch is pressed
+    // start next state if switch is pressed
     stateUpdate(3);
     
   }
@@ -250,25 +244,36 @@ void loop() {
   if ( state == 3 ) {
     stateMessage("MOVING");    
 
+    // check for alerts
     if (motor.StatusReg().bit.AlertsPresent) {
         Serial.println("Motor status: 'In Alert'. Move Canceled.");
     }    
-
+    
+    /*
+    if ( !started ) {
+      unsigned long startTimeSec = millis() * 0.001;
+      SerialPort.Send("time 1");
+      SerialPort.SendLine(startTimeSec);
+      started = true;
+    }*/
+    
+    // find position and its derivative, velocity
     float currentTimeSec = millis() * 0.001;
+    float t = currentTimeSec;
+    SerialPort.Send("start time: ");
+    SerialPort.SendLine(startTimeSec);
+    SerialPort.Send("t: ");
+    SerialPort.SendLine(t);
     float freqHz = 0.4;
     float freqRad = 6.2832 * freqHz;
     int A = 400;
-    float desiredPos = A * sin(freqRad * currentTimeSec);
-    float desiredVel = A * freqRad * cos(freqRad * currentTimeSec);
+    float desiredPos = A * sin(freqRad * t);
+    float desiredVel = A * freqRad * cos(freqRad * t);
 
-    /*
-    int currentTime = millis();
-    float currentTimeSec = currentTime * .001 * 6.2832 * .4; // convert ms to s then multiply by 2*pi and divide by period
-    float desiredPos = 400 * cos(currentTimeSec);
-    */
 
-    motor.Move(desiredPos, StepGenerator::MOVE_TARGET_ABSOLUTE); 
-    //motor.MoveVelocity(desiredVel);
+
+    //motor.Move(desiredPos, StepGenerator::MOVE_TARGET_ABSOLUTE); 
+    motor.MoveVelocity(desiredVel);
     //SerialPort.SendLine(desiredPos);
     
     // go back to state 2 if state switch is pressed
