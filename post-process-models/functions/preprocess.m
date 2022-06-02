@@ -12,13 +12,10 @@ fs_old = round(1/((time(end)-time(1))/numel(time)), 0);
 % bring time back to start at zero
 time = time - time(1);
 
-% include calibration curve
-if exist('param.slope', 'var')
+try
     data = data .* pram.slope;
-end
-
-if exist('param.intercept', 'var')
     data = data - pram.intercept;
+catch
 end
 
 % center on mean
