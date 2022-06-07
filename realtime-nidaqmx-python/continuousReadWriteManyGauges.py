@@ -18,15 +18,22 @@ sampleRate = 100
 global data_buffer
 global values_read
 
-data_buffer = np.zeros(nSamples, dtype=np.float64)
-values_read = np.zeros(nSamples, dtype=np.float64)
+data_buffer = np.zeros((4, nSamples), dtype=np.float64)
+values_read = np.zeros((4, nSamples), dtype=np.float64)
+first_write = np.ones(nSamples, dtype=np.float64)
+
+data_buffer.flags['C_CONTIGUOUS']
+values_read.flags['C_CONTIGUOUS']
 
 with nidaqmx.Task() as readTask, nidaqmx.Task() as writeTask:
 
 # PORTS + TIMING
 
     # read task
+    readTask.ai_channels.add_ai_voltage_chan("PXI1Slot5/ai2")
+    readTask.ai_channels.add_ai_voltage_chan("PXI1Slot5/ai6")
     readTask.ai_channels.add_ai_voltage_chan("PXI1Slot5/ai4")
+    readTask.ai_channels.add_ai_voltage_chan("PXI1Slot5/ai0")
     readTask.timing.cfg_samp_clk_timing(
         rate = sampleRate, 
         sample_mode=AcquisitionType.CONTINUOUS, 
@@ -41,6 +48,7 @@ with nidaqmx.Task() as readTask, nidaqmx.Task() as writeTask:
         samps_per_chan=nSamples
     )
 
+    # require the write task to ask for new data, rather than simply repeating
     writeTask.out_stream.regen_mode = RegenerationMode.DONT_ALLOW_REGENERATION
 
 # DEFINE CALLBACK
@@ -49,14 +57,16 @@ with nidaqmx.Task() as readTask, nidaqmx.Task() as writeTask:
 
         global data_buffer
 
+    # read new data
         reader.read_many_sample(
             values_read,
             number_of_samples_per_channel = nSamples,
             )
 
-        data_buffer = np.append(
-            data_buffer,
-            values_read,
+    # add new data to buffer
+        data_buffer = np.concatenate(
+            (data_buffer, values_read), 
+            axis = 1 # channels are rows, samples are columns
         )
         
         return 0
@@ -65,17 +75,18 @@ with nidaqmx.Task() as readTask, nidaqmx.Task() as writeTask:
                  number_of_samples, callback_data):
         global data_buffer
 
-        write_data = data_buffer[-nSamples:]
+    # write the last nSamples of the third column of the stored array
+        write_data = data_buffer[0, -nSamples:]
 
         writer.write_many_sample(write_data)
 
         return 0
     
 # STREAMS
-    reader = AnalogSingleChannelReader(
+    reader = AnalogMultiChannelReader( # multi channel
         readTask.in_stream
     )
-    writer = AnalogSingleChannelWriter(
+    writer = AnalogSingleChannelWriter( # single channel
         writeTask.out_stream, 
         auto_start=False
     )
@@ -91,8 +102,10 @@ with nidaqmx.Task() as readTask, nidaqmx.Task() as writeTask:
         write_callback,
     )
 
-    print(np.shape(values_read))
-    writer.write_many_sample(values_read)
+    # print(values_read[:, 2])
+    # print(values_read.flags['C_CONTIGUOUS'])
+    # print(np.shape(values_read[:, 2]))
+    writer.write_many_sample(first_write)
 # START
     readTask.start()
     writeTask.start()
