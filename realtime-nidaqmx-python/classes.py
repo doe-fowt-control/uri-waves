@@ -4,8 +4,8 @@ from scipy.signal import welch
 from scipy import linalg
 
 from numpy import genfromtxt
-my_data = genfromtxt('wave_sample.csv', delimiter=',')
-my_data = my_data[1:,:]
+bufferData = genfromtxt('python test data - bufferValues.csv', delimiter=',')
+validateData = genfromtxt('python test data - validateValues.csv', delimiter = ',')
 
 class WaveGauges:
     '''
@@ -44,13 +44,16 @@ class wrpParams:
         self.ts = 30            # spectral assimilation time
         self.nf = 100           # number of frequencies to use for reconstruction
         self.mu = 0.05          
-        self.lam = 10
+        self.lam = 1
 
-class FlowManager:
+class DataManager:
     def __init__(self, pram, gauges):
         
         self.readSampleRate = 30    # frequency to take wave measurements (Hz)
         self.writeSampleRate = 100  # frequency to send motor commands (Hz)
+
+        self.preWindow = 5          # number of seconds before assimilation to reconstruct for
+        self.postWindow = 10        # number of seconds after assimilation to reconstruct for
 
         # should eventually be based on the actual (calculated) prediction zone
         self.updateInterval = 1     # time between grabs at new data (s)
@@ -67,6 +70,11 @@ class FlowManager:
         self.bufferValues = np.zeros((self.nChannels, self.bufferNSamples), dtype=np.float64) 
         self.bufferTime = np.arange(-pram.ts, 0, self.readDT)
 
+        # set up validation - samples, values, time -
+        self.validateNSamples = self.readSampleRate * (pram.ta + self.preWindow + self.postWindow)
+        self.validateValues = np.zeros((self.nChannels, self.validateNSamples), dtype=np.float64)
+        self.validateTime = np.arange(-pram.ta - self.preWindow, self.postWindow, self.readDT)
+
         # initialize read and write
         self.addUpdateInterval(self.updateInterval)
 
@@ -79,8 +87,12 @@ class FlowManager:
         # gauges for prediction
         self.pg = gauges.predictionIndex()
 
+        # alter calibration constants for easy multiplying
+        self.calibrationSlopes = np.expand_dims(gauges.calibrationSlopes, axis = 1)
+
 ######### FOR TESTING (POST PROCESSING)
-        self.bufferValues = my_data
+        self.bufferValues = bufferData
+        self.validateValues = validateData
 
     def addUpdateInterval(self, updateInterval = 1):
         '''
@@ -109,18 +121,43 @@ class FlowManager:
         # write over old data with new data
         self.bufferValues[:, -self.readNSamples] = newData
 
+    def validateUpdate(self):
+        # add relevant values to validateValues
+        #TODO
+        pass
+
     def reconstructionData(self):
         # select measurement gauges across reconstruction time
         data = self.bufferValues[self.mg, -self.assimilationSamples:]
-        return data
+
+        processedData = self.preprocess(data, self.mg)
+        return processedData
 
     def reconstructionTime(self):
         time = self.bufferTime[-self.assimilationSamples:]
         return time
 
     def spectralData(self):
-        # select measurement gauges across reconstruction time
-        return self.bufferValues
+        data = self.bufferValues[self.mg, :]
+
+        processedData = self.preprocess(data, self.mg)
+        return processedData
+
+    def validateData(self):
+        data = self.validateValues[self.pg, :]
+
+        processedData = self.preprocess(data, self.pg)
+        return processedData
+
+    def preprocess(self, data, whichGauges):
+        # scale by calibration constants
+        data *= self.calibrationSlopes[whichGauges]
+
+        # center on mean
+        dataMeans = np.expand_dims(np.mean(data, axis = 1), axis = 1)
+        data -= dataMeans
+
+        return data
 
 class WRP(wrpParams):
     def __init__(self, gauges):
@@ -137,11 +174,16 @@ class WRP(wrpParams):
 
         self.ng = gauges.nGauges()
 
+        self.xmax = np.max( np.array(self.x)[self.mg] )
+        self.xmin = np.min( np.array(self.x)[self.mg] )
+        self.xpred = np.array(self.x)[self.pg]
+
+    
     def spectral(self, flow):
         # assign spectral variables to wrp class
         data = flow.spectralData()
 
-        f, pxxEach = welch(data, fs = flow.readSampleRate, nfft = 1024)
+        f, pxxEach = welch(data, fs = flow.readSampleRate)
         pxx = np.mean(pxxEach, 0)
   
         # peak period
@@ -158,27 +200,33 @@ class WRP(wrpParams):
 
         self.w = f * np.pi * 2
 
-        pxxMod = pxx
+        thresh = self.mu * np.max(pxx)
+
         # set anything above the threshold to zero
-        pxxMod[pxxMod > self.mu * np.max(pxxMod)] = 0
+        pxx[pxx > thresh] = 0
+        # plt.plot(f, pxx)
         # find the locations which didn't make the cut
-        pxxIndex = np.nonzero(pxxMod)
+        pxxIndex = np.nonzero(pxx)[0]
+
         # find the largest gap between nonzero values
-        low_index = np.argwhere( (np.diff(pxxIndex) == np.max(np.diff(pxxIndex)))[0] )
-        high_index = low_index + 1
+        low_index = np.argwhere( (np.diff(pxxIndex) == np.max(np.diff(pxxIndex))) )[0][0]
+        high_index = pxxIndex[low_index + 1]
+
+        # plt.axvline(x = f[low_index])
+        # plt.axvline(x = f[high_index])
+        # plt.show()
 
         # select group velocities
-        self.cg_fast = (9.81 / (self.w[low_index] * 2))[0][0]
-        self.cg_slow = (9.81 / (self.w[high_index] * 2))[0][0]
+        self.cg_fast = (9.81 / (self.w[low_index] * 2))
+        self.cg_slow = (9.81 / (self.w[high_index] * 2))
 
         # spatial parameters for reconstruction bandwidth
-        self.xe = np.max( np.array(self.x)[self.mg] ) + self.ta * self.cg_slow
-        self.xb = np.min( np.array(self.x)[self.mg])
+        self.xe = self.xmax + self.ta * self.cg_slow
+        self.xb = self.xmin
 
         # reconstruction bandwidth wavenumbers
         self.k_min = 2 * np.pi / (self.xe - self.xb)
         self.k_max = 2 * np.pi / min(abs(np.diff(self.x)))
-
 
     def inversion(self, flow):
 
@@ -188,45 +236,67 @@ class WRP(wrpParams):
 
     # get data
         eta = flow.reconstructionData()
-        eta = np.reshape(eta,(np.size(eta), 1))
-
         t = flow.reconstructionTime()
         x = np.array(self.x)[self.mg]
 
-    # grid data
+    # grid data and reshape for matrix operations
         X, T = np.meshgrid(x, t)
 
-        k = np.reshape(k, (self.nf, 1))
-        X = np.reshape(X, (1, np.size(X)))
+        self.k = np.reshape(k, (self.nf, 1))
+        self.w = np.reshape(w, (self.nf, 1))
 
-        w = np.reshape(w, (self.nf, 1))
-        T = np.reshape(T, (1, np.size(T)))        
+        X = np.reshape(X, (1, np.size(X)), order='F')
 
-        psi = np.transpose(k@X - w@T)
+        T = np.reshape(T, (1, np.size(T)), order='F')        
+        eta = np.reshape(eta, (np.size(eta), 1))
 
+        psi = np.transpose(self.k@X - self.w@T)
+
+        
+    # data matrix
         Z = np.zeros((np.size(X), 2*self.nf))
-
         Z[:, :self.nf] = np.cos(psi)
         Z[:, self.nf:] = np.sin(psi)
 
 
-        m = np.transpose(Z)@Z + np.identity(self.nf * 2) * self.lam
+        m = np.transpose(Z)@Z + (np.identity(self.nf * 2) * self.lam)
         n = np.transpose(Z)@eta
         weights, res, rnk, s = linalg.lstsq(m, n)
 
-        self.a = weights[:self.nf,0]
-        self.b = weights[self.nf:,0]
+        # choose all columns [:] for future matrix math
+        self.a = weights[:self.nf,:]
+        self.b = weights[self.nf:,:]
 
+    def reconstruct(self, flow):
 
-    def reconstruct(self):
-        self.reconstructionLocation = 0
-        # assume that location of interest is always zero
-        pass
+        # prediction zone time boundary
+        self.t_min = (1 / self.cg_slow) * (self.xpred - self.xe)
+        self.t_max = (1 / self.cg_fast) * (self.xpred - self.xb)
 
+        # time for matrix math
+        t = np.expand_dims(flow.validateTime, axis = 0)
 
-    def correct(self):
-        # scale the data array before inversion or spectral analysis by calibrationConstants
-        pass
+        # dx array for surface representation at desired location
+        dx = self.xpred * np.ones((1, len(t)))
+
+        # matrix for summing across frequencies
+        sumMatrix = np.ones((1, self.nf))
+
+        # reconstruct
+        acos = self.a * np.cos( (self.k @ dx) - self.w @ t )
+        bsin = self.b * np.sin( (self.k @ dx) - self.w @ t )
+        
+        self.reconstructedSurface = sumMatrix @ (acos + bsin)
+
+        # plot
+        plt.plot(flow.validateTime, np.squeeze(self.reconstructedSurface), color = 'blue', label = 'reconstructed')
+        plt.plot(flow.validateTime, np.squeeze(flow.validateData()), color = 'red', label = 'measured')
+        plt.ylim([-.2, .2])
+        plt.axvline(self.t_min, color = 'black', linestyle = '--', label = 'reconstrucion boundary')
+        plt.axvline(self.t_max, color = 'black', linestyle = '--')
+        plt.axvline(0, color = 'gray', linestyle = '-', label = 'reconstruction time')
+        plt.legend()        
+        plt.show()
 
     def filter(self):
         # do some lowpass filtering on noisy data
