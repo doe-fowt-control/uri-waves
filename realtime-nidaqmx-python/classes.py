@@ -1,11 +1,9 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.signal import welch
 from scipy import linalg
-
+import matplotlib.pyplot as plt
 from numpy import genfromtxt
-bufferData = genfromtxt('python test data - bufferValues.csv', delimiter=',')
-validateData = genfromtxt('python test data - validateValues.csv', delimiter = ',')
+
 
 class WaveGauges:
     '''
@@ -37,6 +35,8 @@ class WaveGauges:
         pg = [i for i, e in enumerate(self.wrpRole) if e != 0]
         return pg
 
+
+
 class wrpParams:
     def __init__(self):
         # wrp parameters
@@ -46,14 +46,16 @@ class wrpParams:
         self.mu = 0.05          
         self.lam = 1
 
+
+
 class DataManager:
     def __init__(self, pram, gauges):
         
         self.readSampleRate = 30    # frequency to take wave measurements (Hz)
         self.writeSampleRate = 100  # frequency to send motor commands (Hz)
 
-        self.preWindow = 5          # number of seconds before assimilation to reconstruct for
-        self.postWindow = 10        # number of seconds after assimilation to reconstruct for
+        self.preWindow = 0          # number of seconds before assimilation to reconstruct for
+        self.postWindow = 5        # number of seconds after assimilation to reconstruct for
 
         # should eventually be based on the actual (calculated) prediction zone
         self.updateInterval = 1     # time between grabs at new data (s)
@@ -72,6 +74,8 @@ class DataManager:
 
         # set up validation - samples, values, time -
         self.validateNSamples = self.readSampleRate * (pram.ta + self.preWindow + self.postWindow)
+        self.validateNFutureSamples = self.readSampleRate * self.postWindow
+        self.validateNPastSamples = self.readSampleRate * (pram.ta + self.preWindow)
         self.validateValues = np.zeros((self.nChannels, self.validateNSamples), dtype=np.float64)
         self.validateTime = np.arange(-pram.ta - self.preWindow, self.postWindow, self.readDT)
 
@@ -90,9 +94,17 @@ class DataManager:
         # alter calibration constants for easy multiplying
         self.calibrationSlopes = np.expand_dims(gauges.calibrationSlopes, axis = 1)
 
-######### FOR TESTING (POST PROCESSING)
-        self.bufferValues = bufferData
-        self.validateValues = validateData
+        # initialize array for saving the results of old inversions
+
+        # should be saved for as many seconds as are being visualized in the future
+        self.inversionNSaved = int(self.postWindow / self.updateInterval)
+        # print(self.inversionNSaved)
+        self.inversionSavedValues = np.zeros((2, self.inversionNSaved, pram.nf))
+
+
+# ######### FOR TESTING (POST PROCESSING)
+#         self.bufferValues = bufferData
+#         self.validateValues = validateData
 
     def addUpdateInterval(self, updateInterval = 1):
         '''
@@ -114,17 +126,26 @@ class DataManager:
         self.writeTime = np.arange(0, self.updateInterval, self.writeDT)
 
     def bufferUpdate(self, newData):
-
         # shift old data to the end of the matrix
         self.bufferValues = np.roll(self.bufferValues, -self.readNSamples)
+        # write over old data with new data
+        self.bufferValues[:, -self.readNSamples:] = newData
+
+    def validateUpdate(self, newData):
+        # shift old data to the end of the matrix
+        self.validateValues = np.roll(self.validateValues, -self.readNSamples)
         
         # write over old data with new data
-        self.bufferValues[:, -self.readNSamples] = newData
+        self.validateValues[:, -self.readNSamples:] = newData
 
-    def validateUpdate(self):
-        # add relevant values to validateValues
-        #TODO
-        pass
+    def inversionUpdate(self, a, b):
+        # array to save backlog of inversion results, good for validating real time
+        self.inversionSavedValues = np.roll(self.inversionSavedValues, -1, axis = 1)
+
+        self.inversionSavedValues[0][self.inversionNSaved - 1] = a
+
+        self.inversionSavedValues[1][self.inversionNSaved - 1] = b
+
 
     def reconstructionData(self):
         # select measurement gauges across reconstruction time
@@ -159,6 +180,36 @@ class DataManager:
 
         return data
 
+
+
+class DataLoader:
+    def __init__(self, dataFile, timeFile):
+        # location of data
+        self.dataFileName = dataFile
+        # load full array
+        self.dataFull = genfromtxt(self.dataFileName, delimiter=',')
+
+        # location of data
+        self.timeFileName = timeFile
+        # load full array
+        self.timeFull = genfromtxt(self.timeFileName, delimiter=',')
+
+        # location in full array
+        self.currentIndex = 0
+
+    def generateBuffers(self, flow, reconstructionTime):
+        reconstructionIndex = np.argmin( np.abs(reconstructionTime - self.timeFull))
+        bufferLowIndex = reconstructionIndex - flow.bufferNSamples
+        bufferHighIndex = reconstructionIndex
+
+        validateLowIndex = reconstructionIndex - flow.validateNPastSamples
+        validateHighIndex = reconstructionIndex + flow.validateNFutureSamples
+
+        flow.bufferValues = self.dataFull[:, bufferLowIndex:bufferHighIndex]
+        flow.validateValues = self.dataFull[:, validateLowIndex:validateHighIndex]
+
+
+
 class WRP(wrpParams):
     def __init__(self, gauges):
         super().__init__()
@@ -171,8 +222,6 @@ class WRP(wrpParams):
 
         # gauges for prediction
         self.pg = gauges.predictionIndex()
-
-        self.ng = gauges.nGauges()
 
         self.xmax = np.max( np.array(self.x)[self.mg] )
         self.xmin = np.min( np.array(self.x)[self.mg] )
@@ -267,6 +316,7 @@ class WRP(wrpParams):
         self.a = weights[:self.nf,:]
         self.b = weights[self.nf:,:]
 
+
     def reconstruct(self, flow):
 
         # prediction zone time boundary
@@ -288,6 +338,7 @@ class WRP(wrpParams):
         
         self.reconstructedSurface = sumMatrix @ (acos + bsin)
 
+    def vis(self, flow):
         # plot
         plt.plot(flow.validateTime, np.squeeze(self.reconstructedSurface), color = 'blue', label = 'reconstructed')
         plt.plot(flow.validateTime, np.squeeze(flow.validateData()), color = 'red', label = 'measured')
