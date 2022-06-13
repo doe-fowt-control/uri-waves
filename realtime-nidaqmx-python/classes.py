@@ -22,19 +22,24 @@ class WaveGauges:
         self.wrpRole.append(role)
 
     def nGauges(self):
-        # find number of active wave gauges
+        '''
+        find number of active wave gauges
+        '''
         return(len(self.xPositions))
 
     def measurementIndex(self):
-        # find where the measurements should be taken
+        '''
+        return the indices of the measurement gauges
+        '''
         mg = [i for i, e in enumerate(self.wrpRole) if e == 0]
         return mg
 
     def predictionIndex(self):
-        # find where the prediction should be made
+        '''
+        return the index of the prediction/validation gauge
+        '''
         pg = [i for i, e in enumerate(self.wrpRole) if e != 0]
         return pg
-
 
 
 class wrpParams:
@@ -43,9 +48,8 @@ class wrpParams:
         self.ta = 10            # reconstruction assimilation time
         self.ts = 30            # spectral assimilation time
         self.nf = 100           # number of frequencies to use for reconstruction
-        self.mu = 0.05          
-        self.lam = 1
-
+        self.mu = 0.05          # threshold parameter to determine fastest/slowest group velocities for prediction zone
+        self.lam = 1            # regularization parameter for least squares fit
 
 
 class DataManager:
@@ -67,6 +71,9 @@ class DataManager:
         self.readDT = 1 / self.readSampleRate
         self.writeDT = 1 / self.writeSampleRate
 
+        # initialize read and write based on desired interval between samples
+        self.addUpdateInterval(self.updateInterval)
+
         # set up buffer - samples, values, time -
         self.bufferNSamples = self.readSampleRate * pram.ts
         self.bufferValues = np.zeros((self.nChannels, self.bufferNSamples), dtype=np.float64) 
@@ -79,8 +86,14 @@ class DataManager:
         self.validateValues = np.zeros((self.nChannels, self.validateNSamples), dtype=np.float64)
         self.validateTime = np.arange(-pram.ta - self.preWindow, self.postWindow, self.readDT)
 
-        # initialize read and write
-        self.addUpdateInterval(self.updateInterval)
+       # initialize array for saving the results of old inversions
+
+        # should be saved for as many seconds as are being visualized in the future
+        self.inversionNSaved = int(self.postWindow / self.updateInterval)
+        # print(self.inversionNSaved)
+        self.inversionSavedValues = np.zeros((2, self.inversionNSaved, pram.nf))
+
+
 
         # number of samples for reconstruction
         self.assimilationSamples = pram.ta * self.readSampleRate
@@ -94,17 +107,9 @@ class DataManager:
         # alter calibration constants for easy multiplying
         self.calibrationSlopes = np.expand_dims(gauges.calibrationSlopes, axis = 1)
 
-        # initialize array for saving the results of old inversions
-
-        # should be saved for as many seconds as are being visualized in the future
-        self.inversionNSaved = int(self.postWindow / self.updateInterval)
-        # print(self.inversionNSaved)
-        self.inversionSavedValues = np.zeros((2, self.inversionNSaved, pram.nf))
+ 
 
 
-# ######### FOR TESTING (POST PROCESSING)
-#         self.bufferValues = bufferData
-#         self.validateValues = validateData
 
     def addUpdateInterval(self, updateInterval = 1):
         '''
@@ -142,10 +147,26 @@ class DataManager:
         # array to save backlog of inversion results, good for validating real time
         self.inversionSavedValues = np.roll(self.inversionSavedValues, -1, axis = 1)
 
-        self.inversionSavedValues[0][self.inversionNSaved - 1] = a
+        # need to squeeze to fit it into the matrix
+        self.inversionSavedValues[0][self.inversionNSaved - 1] = np.squeeze(a)
+        self.inversionSavedValues[1][self.inversionNSaved - 1] = np.squeeze(b)
 
-        self.inversionSavedValues[1][self.inversionNSaved - 1] = b
+        # print(self.inversionSavedValues)
 
+    def inversionGetValues(self, method):
+        # need expand_dims for the matrix math in reconstruct
+
+        if method == 'oldest':
+            a = np.expand_dims(self.inversionSavedValues[0][0][:], axis=1)
+            b = np.expand_dims(self.inversionSavedValues[1][0][:], axis=1)
+
+            return a,b
+
+        if method == 'newest':
+            a = np.expand_dims(self.inversionSavedValues[0][-1][:], axis=1)
+            b = np.expand_dims(self.inversionSavedValues[1][-1][:], axis=1)
+
+            return a,b
 
     def reconstructionData(self):
         # select measurement gauges across reconstruction time
@@ -194,21 +215,73 @@ class DataLoader:
         # load full array
         self.timeFull = genfromtxt(self.timeFileName, delimiter=',')
 
-        # location in full array
+        # location in full array for dynamic method
         self.currentIndex = 0
 
-    def generateBuffers(self, flow, reconstructionTime):
-        reconstructionIndex = np.argmin( np.abs(reconstructionTime - self.timeFull))
-        bufferLowIndex = reconstructionIndex - flow.bufferNSamples
-        bufferHighIndex = reconstructionIndex
+        # location in full array for dynamic soft method
+        self.bufferCurrentIndex = 0
+        self.validateCurrentIndex = 0
 
-        validateLowIndex = reconstructionIndex - flow.validateNPastSamples
-        validateHighIndex = reconstructionIndex + flow.validateNFutureSamples
+    def generateBuffersStatic(self, flow, reconstructionTime):
+        # load reconstruction and validation data one time
+
+        # index of the specified reconstruction time
+        self.reconstructionIndex = np.argmin( np.abs(reconstructionTime - self.timeFull))
+        bufferLowIndex = self.reconstructionIndex - flow.bufferNSamples
+        bufferHighIndex = self.reconstructionIndex
+
+        validateLowIndex = self.reconstructionIndex - flow.validateNPastSamples
+        validateHighIndex = self.reconstructionIndex + flow.validateNFutureSamples
 
         flow.bufferValues = self.dataFull[:, bufferLowIndex:bufferHighIndex]
         flow.validateValues = self.dataFull[:, validateLowIndex:validateHighIndex]
 
+    def generateBuffersDynamic(self, flow, wrp, reconstructionTime):
+        # index of the specified reconstruction time
+        self.reconstructionIndex = np.argmin( np.abs(reconstructionTime - self.timeFull))
 
+        while self.currentIndex <= self.reconstructionIndex:
+            if self.currentIndex == 0:
+                newData = self.dataFull[:, :flow.readNSamples]
+            else:              
+                newData = self.dataFull[:, self.currentIndex:self.currentIndex + flow.readNSamples]
+            
+            flow.bufferUpdate(newData)
+            flow.validateUpdate(newData)
+            
+            wrp.spectral(flow)
+            wrp.inversion(flow)
+
+            self.currentIndex += flow.readNSamples
+
+    def generateBuffersDynamicSoft(self, flow, reconstructionTime):
+        # called 'soft' because it still allocates data to the right place in each buffer, 
+        # unlike true acquisition which needs to do reconstruction as soon as data is available
+
+        # index of the specified reconstruction time
+        self.reconstructionIndex = np.argmin( np.abs(reconstructionTime - self.timeFull))
+
+        # add samples from self.dataFull to flow.validateValues until the number of samples added
+        # matches flow.validateNFutureSamples
+        flow.validateValues[:, -flow.validateNFutureSamples:] = self.dataFull[:, :flow.validateNFutureSamples]
+        self.validateCurrentIndex = flow.validateNFutureSamples
+
+        while self.bufferCurrentIndex < self.reconstructionIndex:
+            if self.bufferCurrentIndex == 0:
+                bufferNewData = self.dataFull[:, :flow.readNSamples]
+                flow.bufferUpdate(bufferNewData)
+
+            # update bufferValues and validateValues
+            bufferNewData = self.dataFull[:, self.bufferCurrentIndex: self.bufferCurrentIndex+flow.readNSamples]
+            flow.bufferUpdate(bufferNewData)
+
+            validateNewData = self.dataFull[:, self.validateCurrentIndex: self.validateCurrentIndex+flow.readNSamples]
+            flow.validateUpdate(validateNewData)
+
+            self.bufferCurrentIndex += flow.readNSamples
+            self.validateCurrentIndex += flow.readNSamples
+
+        print(flow.bufferValues)
 
 class WRP(wrpParams):
     def __init__(self, gauges):
@@ -223,11 +296,13 @@ class WRP(wrpParams):
         # gauges for prediction
         self.pg = gauges.predictionIndex()
 
+        # important spatial parameters for wrp based on gauge locations
         self.xmax = np.max( np.array(self.x)[self.mg] )
         self.xmin = np.min( np.array(self.x)[self.mg] )
         self.xpred = np.array(self.x)[self.pg]
 
-    
+
+
     def spectral(self, flow):
         # assign spectral variables to wrp class
         data = flow.spectralData()
@@ -313,11 +388,13 @@ class WRP(wrpParams):
         weights, res, rnk, s = linalg.lstsq(m, n)
 
         # choose all columns [:] for future matrix math
-        self.a = weights[:self.nf,:]
-        self.b = weights[self.nf:,:]
+        a = weights[:self.nf,:]
+        b = weights[self.nf:,:]
+
+        flow.inversionUpdate(a, b)
 
 
-    def reconstruct(self, flow):
+    def reconstruct(self, flow, method = 'validate'):
 
         # prediction zone time boundary
         self.t_min = (1 / self.cg_slow) * (self.xpred - self.xe)
@@ -332,9 +409,14 @@ class WRP(wrpParams):
         # matrix for summing across frequencies
         sumMatrix = np.ones((1, self.nf))
 
+        if method == 'validate':
+            a, b = flow.inversionGetValues('oldest')
+        if method == 'now':
+            a, b = flow.inversionGetValues('newest')
+
         # reconstruct
-        acos = self.a * np.cos( (self.k @ dx) - self.w @ t )
-        bsin = self.b * np.sin( (self.k @ dx) - self.w @ t )
+        acos = a * np.cos( (self.k @ dx) - self.w @ t )
+        bsin = b * np.sin( (self.k @ dx) - self.w @ t )
         
         self.reconstructedSurface = sumMatrix @ (acos + bsin)
 
