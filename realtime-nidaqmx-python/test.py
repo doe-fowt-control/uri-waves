@@ -11,7 +11,13 @@ gauges.addGauge(-2, .1, "PXI1Slot5/ai4", 0)
 gauges.addGauge(-0, .1, "PXI1Slot5/ai0", 1) # the '1' here indicates for prediction
 
 # create flow object which manages transferring data to wrp
-flow = DataManager(pram, gauges)
+flow = DataManager(
+    pram,
+    gauges,
+    readSampleRate=30,
+    writeSampleRate=30,
+    updateInterval = 1,
+)
 
 load = DataLoader('python test data - full.csv', 'python test data - fullTime.csv')
 

@@ -54,16 +54,16 @@ class wrpParams:
 
 
 class DataManager:
-    def __init__(self, pram, gauges):
+    def __init__(self, pram, gauges, readSampleRate, writeSampleRate, updateInterval):
         
-        self.readSampleRate = 30    # frequency to take wave measurements (Hz)
-        self.writeSampleRate = 100  # frequency to send motor commands (Hz)
+        self.readSampleRate = readSampleRate    # frequency to take wave measurements (Hz)
+        self.writeSampleRate = writeSampleRate  # frequency to send motor commands (Hz)
 
         self.preWindow = 0          # number of seconds before assimilation to reconstruct for
         self.postWindow = 5        # number of seconds after assimilation to reconstruct for
 
         # should eventually be based on the actual (calculated) prediction zone
-        self.updateInterval = 1     # time between grabs at new data (s)
+        self.updateInterval = updateInterval     # time between grabs at new data (s)
         
         # number of channels from which to read
         self.nChannels = gauges.nGauges()
@@ -73,7 +73,7 @@ class DataManager:
         self.writeDT = 1 / self.writeSampleRate
 
         # initialize read and write based on desired interval between samples
-        self.addUpdateInterval(self.updateInterval)
+        self.addUpdateInterval()
 
         # set up buffer - samples, values, time -
         self.bufferNSamples = self.readSampleRate * pram.ts
@@ -104,14 +104,13 @@ class DataManager:
         self.calibrationSlopes = np.expand_dims(gauges.calibrationSlopes, axis = 1)
 
  
-    def addUpdateInterval(self, updateInterval = 1):
+    def addUpdateInterval(self):
         '''
             Initialize read and write - samples, values, time - based on update interval
             
             Also allows the user to change the duration of the updateInterval,
             which in practice should also be the same length as the prediction zone
         '''
-        self.updateInterval = updateInterval
 
         # set up read - samples, values, time -
         self.readNSamples = self.readSampleRate * self.updateInterval
@@ -120,8 +119,13 @@ class DataManager:
 
         # set up write - samples, values, time -
         self.writeNSamples = self.writeSampleRate * self.updateInterval
-        self.writeValues = np.zeros((1, self.writeNSamples), dtype=np.float64) 
+        self.writeValues = np.zeros((self.writeNSamples), dtype=np.float64) 
         self.writeTime = np.arange(0, self.updateInterval, self.writeDT)        
+
+        # set up predict - samples, values, time - 
+        self.predictNSamples = self.writeNSamples * self.updateInterval
+        self.predictValues = np.zeros(self.predictNSamples, dtype = np.float64)
+        self.predictTime = np.arange(0, self.updateInterval, self.writeDT)
 
     def bufferUpdate(self, newData):
         # shift old data to the end of the matrix
@@ -299,7 +303,7 @@ class WRP(wrpParams):
         self.xmin = np.min( np.array(self.x)[self.mg] )
         self.xpred = np.array(self.x)[self.pg]
 
-
+        self.plotFlag = False
 
     def spectral(self, flow):
         # assign spectral variables to wrp class
@@ -308,8 +312,8 @@ class WRP(wrpParams):
         f, pxxEach = welch(data, fs = flow.readSampleRate)
         pxx = np.mean(pxxEach, 0)
   
-        # peak period
-        self.pperiod = 1 / (f[pxx == np.max(pxx)])
+        # added 0.01 because warning when divide by zero
+        self.pperiod = 1 / (f[pxx == np.max(pxx)] + 0.01)
 
         # peak wavelength
         self.k_p = (1 / 9.81) * (2 * np.pi / self.pperiod)**2
@@ -395,44 +399,52 @@ class WRP(wrpParams):
         flow.inversionUpdate(a, b)
 
 
-    def reconstruct(self, flow, method = 'validate'):
-
+    def reconstruct(self, flow):
+# General
         # prediction zone time boundary
         self.t_min = (1 / self.cg_slow) * (self.xpred - self.xe)
         self.t_max = (1 / self.cg_fast) * (self.xpred - self.xb)
 
-        # time for matrix math
-        t = np.expand_dims(flow.validateTime, axis = 0)
-
-        # dx array for surface representation at desired location
-        dx = self.xpred * np.ones((1, len(t)))
-
         # matrix for summing across frequencies
         sumMatrix = np.ones((1, self.nf))
 
-        if method == 'validate':
-            a, b = flow.inversionGetValues('oldest')
-        if method == 'now':
-            a, b = flow.inversionGetValues('newest')
+# Reconstruct for validation
+        # dx array for surface representation at desired location
+        dxValidate = self.xpred * np.ones((1, flow.validateNSamples))
 
-        # reconstruct
-        acos = a * np.cos( (self.k @ dx) - self.w @ t )
-        bsin = b * np.sin( (self.k @ dx) - self.w @ t )
+        # time for matrix math
+        tValidate = np.expand_dims(flow.validateTime, axis = 0)
+
+        aValidate, bValidate = flow.inversionGetValues('oldest')
+
+        acosValidate = aValidate * np.cos( (self.k @ dxValidate) - self.w @ tValidate )
+        bsinValidate = bValidate * np.sin( (self.k @ dxValidate) - self.w @ tValidate )
         
-        self.reconstructedSurface = sumMatrix @ (acos + bsin)
+        self.reconstructedSurfaceValidate = sumMatrix @ (acosValidate + bsinValidate)
 
+# Reconstruct for prediction
+        # dx array for surface representation at desired location
+        dxPredict = self.xpred * np.ones((1, flow.predictNSamples))
+
+        tPredict = np.expand_dims(flow.predictTime, axis = 0)
+        aPredict, bPredict = flow.inversionGetValues('newest')
+
+        acosPredict = aPredict * np.cos( (self.k @ dxPredict) - self.w @ tPredict )
+        bsinPredict = bPredict * np.sin( (self.k @ dxPredict) - self.w @ tPredict )
+        
+        self.reconstructedSurfacePredict = np.squeeze(sumMatrix @ (acosPredict + bsinPredict))
     def setVis(self, flow):
         plt.ion()
 
-        figure, ax = plt.subplots(figsize = (4,3))
+        figure, ax = plt.subplots(figsize = (8,4))
         plt.ylim([-.2, .2])
         ax.axvline(0, color = 'gray', linestyle = '-', label = 'reconstruction time')
-        ax.legend()
         reconstructedLine, = ax.plot(flow.validateTime, np.zeros(flow.validateNSamples), color = 'blue', label = 'reconstructed')
         measuredLine, = ax.plot(flow.validateTime, np.zeros(flow.validateNSamples), color = 'red', label = 'measured')
-        tMin = ax.axvline(-1, color = 'black', linestyle = '--', label = 'reconstrucion boundary')
+        tMin = ax.axvline(-1, color = 'black', linestyle = '--', label = 'reconstruction boundary')
         tMax = ax.axvline(1, color = 'black', linestyle = '--')
-
+        
+        ax.legend(loc = 'upper left')
         V = figure, ax, reconstructedLine, measuredLine, tMin, tMax
 
         return V
@@ -441,7 +453,7 @@ class WRP(wrpParams):
 
         figure, ax, reconstructedLine, measuredLine, tMin, tMax = V
 
-        reconstructedLine.set_ydata(np.squeeze(self.reconstructedSurface))
+        reconstructedLine.set_ydata(np.squeeze(self.reconstructedSurfaceValidate))
         measuredLine.set_ydata(np.squeeze(flow.validateData()))
         tMin.set_xdata(self.t_min)
         tMax.set_xdata(self.t_max)

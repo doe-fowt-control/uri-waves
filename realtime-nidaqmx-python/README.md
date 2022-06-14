@@ -1,4 +1,12 @@
 # WRP Model Documentation (Python)
+The goals of this model are numerous
+- implement wrp *forecasting* in real time for use by the controller
+- save old forecasts to validate them once the wave has passed
+- 
+
+WRP expects to be given two local data buffers
+bufferValues has the spectral assimilation data, of which reconstruction assimilation is a subset. It is caught up with real time
+validateValues has an amount of data which varies depending on how far outside of the reconstruction assimilation time in either direction you want to visualize 
 
 ## Classes
 
@@ -16,3 +24,7 @@ Stores global parameters which specifically affect the physical wrp model. They 
 - lam : regularization parameter for least squares fit
 
 ### 
+
+
+- read and write
+- buffer, validate, inversion

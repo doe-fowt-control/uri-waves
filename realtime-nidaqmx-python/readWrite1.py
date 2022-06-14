@@ -4,32 +4,33 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-# import nidaqmx
-# from nidaqmx.stream_readers import (AnalogMultiChannelReader)
-# from nidaqmx.stream_writers import (AnalogSingleChannelWriter)
-# from nidaqmx.constants import AcquisitionType, RegenerationMode
+import nidaqmx
+from nidaqmx.stream_readers import (AnalogMultiChannelReader)
+from nidaqmx.stream_writers import (AnalogSingleChannelWriter)
+from nidaqmx.constants import AcquisitionType, RegenerationMode
 
 # initialize parameters with default settings
 pram = wrpParams()
 
 # create wave gauge object and add gauges
 gauges = WaveGauges()
-gauges.addGauge(-4, .1, "PXI1Slot5/ai2", 0)
-gauges.addGauge(-3.5, .1, "PXI1Slot5/ai6", 0)
-gauges.addGauge(-2, .1, "PXI1Slot5/ai4", 0)
-gauges.addGauge(-0, .1, "PXI1Slot5/ai0", 1)
+gauges.addGauge(-3, 0.07647533792, "PXI1Slot5/ai2", 0)
+gauges.addGauge(-2, 0.0958837817, "PXI1Slot5/ai6", 0)
+gauges.addGauge(-1, 0.09943895465, "PXI1Slot5/ai4", 0)
+gauges.addGauge(-0, 0.07585305507, "PXI1Slot5/ai0", 1)
 
 # create flow object which manages transferring data to wrp
 flow = DataManager(pram, gauges)
 
+print(max(flow.readTime))
+print(max(flow.writeTime))
+
 # set up the wrp
 wrp = WRP(gauges)
 
-wrp.spectral(flow)
-wrp.inversion(flow)
-wrp.reconstruct(flow)
-
-
+global V
+# initialize plotter
+V = wrp.setVis(flow)
 
 with nidaqmx.Task() as readTask, nidaqmx.Task() as writeTask:
 
@@ -58,7 +59,7 @@ with nidaqmx.Task() as readTask, nidaqmx.Task() as writeTask:
 
 # DEFINE CALLBACK
     def read_callback(task_handle, every_n_samples_event_type, number_of_samples, callback_data):
-
+        global V
     # read new data into readValues
         reader.read_many_sample(
             flow.readValues,
@@ -70,17 +71,24 @@ with nidaqmx.Task() as readTask, nidaqmx.Task() as writeTask:
     # add new data to validation array
         flow.validateUpdate(flow.readValues)
 
+        wrp.spectral(flow)
+        wrp.inversion(flow)
+        wrp.reconstruct(flow)
+        wrp.updateVis(flow, V)
+
         return 0
 
     def write_callback(task_handle, every_n_samples_event_type, number_of_samples, callback_data):
 
     # select the last readNSamples of the specified column (gauge) in the stored array
-        readLatest = flow.readBuffer[0, -flow.readNSamples:]
+        readLatest = flow.bufferValues[3, -flow.readNSamples:]
     # create interpolated function from measured series
-        f = interpolate.interp1d(readLatest, flow.readTime)
+        f = interpolate.interp1d(readLatest, flow.readTime, fill_value="extrapolate")
     # evaluate function at necessary intervals
         writeLatest = f(flow.writeTime)
 
+        writeLatest[writeLatest < 0] = 0
+        writeLatest[writeLatest > 10] = 0
         writer.write_many_sample(writeLatest)
         return 0
     
