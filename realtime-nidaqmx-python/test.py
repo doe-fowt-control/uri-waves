@@ -15,20 +15,21 @@ flow = DataManager(pram, gauges)
 
 load = DataLoader('python test data - full.csv', 'python test data - fullTime.csv')
 
+# initialize wrp
 wrp = WRP(gauges)
 
-load.generateBuffersDynamic(flow, wrp, 60)
-
-# load.generateBuffersStatic(flow, 100)
-
-# print(np.count_nonzero(flow.bufferValues==0))
-
-# set up the wrp
+# initialize plotter
+V = wrp.setVis(flow)
 
 
-# wrp.spectral(flow)
-# wrp.inversion(flow)
-wrp.reconstruct(flow)
-wrp.vis(flow)
+# specify operation to be triggered whenever 'loading' data
+def callFunc(wrp, flow):
+    global V
+    # start_time = time.time()
+    wrp.spectral(flow)
+    wrp.inversion(flow)
+    wrp.reconstruct(flow)
+    # print(time.time() - start_time)
+    wrp.updateVis(flow, V)
 
-# print(flow.readNSamples)
+load.generateBuffersDynamic(flow, wrp, 100, callFunc)

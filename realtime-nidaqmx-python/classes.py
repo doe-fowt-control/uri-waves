@@ -3,6 +3,7 @@ from scipy.signal import welch
 from scipy import linalg
 import matplotlib.pyplot as plt
 from numpy import genfromtxt
+import time
 
 
 class WaveGauges:
@@ -86,14 +87,9 @@ class DataManager:
         self.validateValues = np.zeros((self.nChannels, self.validateNSamples), dtype=np.float64)
         self.validateTime = np.arange(-pram.ta - self.preWindow, self.postWindow, self.readDT)
 
-       # initialize array for saving the results of old inversions
-
-        # should be saved for as many seconds as are being visualized in the future
-        self.inversionNSaved = int(self.postWindow / self.updateInterval)
-        # print(self.inversionNSaved)
+        # array to save results of inversions for the length of time to visualize in the future
+        self.inversionNSaved = int(self.postWindow / self.updateInterval) + 1
         self.inversionSavedValues = np.zeros((2, self.inversionNSaved, pram.nf))
-
-
 
         # number of samples for reconstruction
         self.assimilationSamples = pram.ta * self.readSampleRate
@@ -108,27 +104,24 @@ class DataManager:
         self.calibrationSlopes = np.expand_dims(gauges.calibrationSlopes, axis = 1)
 
  
-
-
-
     def addUpdateInterval(self, updateInterval = 1):
         '''
-            This allows the user to change the duration of the updateInterval,
+            Initialize read and write - samples, values, time - based on update interval
+            
+            Also allows the user to change the duration of the updateInterval,
             which in practice should also be the same length as the prediction zone
         '''
         self.updateInterval = updateInterval
 
-        # also update NSamples
+        # set up read - samples, values, time -
         self.readNSamples = self.readSampleRate * self.updateInterval
-        self.writeNSamples = self.writeSampleRate * self.updateInterval
-
-        # empty arrays
         self.readValues = np.zeros((self.nChannels, self.readNSamples), dtype=np.float64)
-        self.writeValues = np.zeros((1, self.writeNSamples), dtype=np.float64) 
-
-        # time series        
         self.readTime = np.arange(0, self.updateInterval, self.readDT)
-        self.writeTime = np.arange(0, self.updateInterval, self.writeDT)
+
+        # set up write - samples, values, time -
+        self.writeNSamples = self.writeSampleRate * self.updateInterval
+        self.writeValues = np.zeros((1, self.writeNSamples), dtype=np.float64) 
+        self.writeTime = np.arange(0, self.updateInterval, self.writeDT)        
 
     def bufferUpdate(self, newData):
         # shift old data to the end of the matrix
@@ -151,7 +144,6 @@ class DataManager:
         self.inversionSavedValues[0][self.inversionNSaved - 1] = np.squeeze(a)
         self.inversionSavedValues[1][self.inversionNSaved - 1] = np.squeeze(b)
 
-        # print(self.inversionSavedValues)
 
     def inversionGetValues(self, method):
         # need expand_dims for the matrix math in reconstruct
@@ -236,21 +228,27 @@ class DataLoader:
         flow.bufferValues = self.dataFull[:, bufferLowIndex:bufferHighIndex]
         flow.validateValues = self.dataFull[:, validateLowIndex:validateHighIndex]
 
-    def generateBuffersDynamic(self, flow, wrp, reconstructionTime):
+    def generateBuffersDynamic(self, flow, wrp, reconstructionTime, callFunc):
         # index of the specified reconstruction time
         self.reconstructionIndex = np.argmin( np.abs(reconstructionTime - self.timeFull))
 
         while self.currentIndex <= self.reconstructionIndex:
             if self.currentIndex == 0:
+
+                filler = np.reshape(np.cos(flow.bufferTime + np.random.normal()), (1, flow.bufferNSamples))
+                fillAll = np.tile(filler, (4, 1))
+                flow.bufferValues = fillAll
+
                 newData = self.dataFull[:, :flow.readNSamples]
+
             else:              
                 newData = self.dataFull[:, self.currentIndex:self.currentIndex + flow.readNSamples]
             
             flow.bufferUpdate(newData)
             flow.validateUpdate(newData)
-            
-            wrp.spectral(flow)
-            wrp.inversion(flow)
+
+            # decide what to do on update in main script
+            callFunc(wrp, flow)
 
             self.currentIndex += flow.readNSamples
 
@@ -341,7 +339,10 @@ class WRP(wrpParams):
         # plt.show()
 
         # select group velocities
-        self.cg_fast = (9.81 / (self.w[low_index] * 2))
+        if self.w[low_index] == 0:
+            self.cg_fast = 20 # super arbitrary
+        else:
+            self.cg_fast = (9.81 / (self.w[low_index] * 2))
         self.cg_slow = (9.81 / (self.w[high_index] * 2))
 
         # spatial parameters for reconstruction bandwidth
@@ -420,16 +421,37 @@ class WRP(wrpParams):
         
         self.reconstructedSurface = sumMatrix @ (acos + bsin)
 
-    def vis(self, flow):
-        # plot
-        plt.plot(flow.validateTime, np.squeeze(self.reconstructedSurface), color = 'blue', label = 'reconstructed')
-        plt.plot(flow.validateTime, np.squeeze(flow.validateData()), color = 'red', label = 'measured')
+    def setVis(self, flow):
+        plt.ion()
+
+        figure, ax = plt.subplots(figsize = (4,3))
         plt.ylim([-.2, .2])
-        plt.axvline(self.t_min, color = 'black', linestyle = '--', label = 'reconstrucion boundary')
-        plt.axvline(self.t_max, color = 'black', linestyle = '--')
-        plt.axvline(0, color = 'gray', linestyle = '-', label = 'reconstruction time')
-        plt.legend()        
-        plt.show()
+        ax.axvline(0, color = 'gray', linestyle = '-', label = 'reconstruction time')
+        ax.legend()
+        reconstructedLine, = ax.plot(flow.validateTime, np.zeros(flow.validateNSamples), color = 'blue', label = 'reconstructed')
+        measuredLine, = ax.plot(flow.validateTime, np.zeros(flow.validateNSamples), color = 'red', label = 'measured')
+        tMin = ax.axvline(-1, color = 'black', linestyle = '--', label = 'reconstrucion boundary')
+        tMax = ax.axvline(1, color = 'black', linestyle = '--')
+
+        V = figure, ax, reconstructedLine, measuredLine, tMin, tMax
+
+        return V
+
+    def updateVis(self, flow, V):
+
+        figure, ax, reconstructedLine, measuredLine, tMin, tMax = V
+
+        reconstructedLine.set_ydata(np.squeeze(self.reconstructedSurface))
+        measuredLine.set_ydata(np.squeeze(flow.validateData()))
+        tMin.set_xdata(self.t_min)
+        tMax.set_xdata(self.t_max)
+
+        figure.canvas.draw()
+        figure.canvas.flush_events()
+        time.sleep(.1)
+
+
+
 
     def filter(self):
         # do some lowpass filtering on noisy data
