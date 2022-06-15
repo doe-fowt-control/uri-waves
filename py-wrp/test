@@ -1,0 +1,60 @@
+import numpy as np
+
+# # specify timing
+# updateInterval = 1                                    # time between grabs at new data (s)
+
+# readSampleRate = 10                                   # frequency to take wave measurements (Hz)
+# readDT = 1 / readSampleRate                           # time interval between wave measurements (s)
+# readNSamples = readSampleRate * updateInterval        # number of wave measurements at a time
+
+# writeSampleRate = 100                                 # frequency to send motor commands (Hz)
+# writeDT = 1 / writeSampleRate                         # time interval between motor commands (s)
+# writeNSamples = writeSampleRate * updateInterval      # number of motor commands at a time
+
+# readBufferDuration = 4                              # store this many seconds worth of data from wave gauges
+# readBufferLength = readSampleRate * readBufferDuration
+
+# # initialize arrays
+# bufferFiller = np.linspace(0,0.39, readBufferLength)
+# readBuffer = np.tile(bufferFiller, (1,1))
+
+# # readBuffer = np.zeros((4, readBufferLength), dtype=np.float64)  # to store all data in process
+# readBufferTime = np.arange(-readBufferDuration, 0, readDT)      # for reconstruction and spectral assimilation
+
+# readValues = np.zeros((4, readNSamples), dtype=np.float64)      # to store data every time it is read
+# readValuesTime = np.arange(0, updateInterval, readDT)           # for the acquired read series
+
+# writeValues = np.ones(writeNSamples, dtype=np.float64)          # initial write
+# writeValuesTime = np.arange(0, updateInterval, writeDT)         # for the generated write series
+
+# print(readBuffer)
+# rolled = np.roll(readBuffer, -readNSamples)
+# rolled[:, -readNSamples:] = 5 * np.ones((1, readNSamples))
+# print(rolled)
+# # print(np.shape(readBuffer))
+
+
+class FlowManager:
+    def __init__(self, updateInterval, rate, nChannels):
+        self.updateInterval = updateInterval
+        self.SampleRate = rate
+        self.nChannels = nChannels
+
+        self.dT = 1 / self.SampleRate                                # time interval between wave measurements (s)
+        self.nSamples = self.SampleRate * self.updateInterval        # number of wave measurements at a time
+        self.values = np.zeros((self.nChannels, self.nSamples), dtype=np.float64)      # to store data every time it is read
+        self.time = np.arange(0, self.updateInterval, self.dT)           # for the acquired read series
+
+
+class wrp:
+    def __init__(self):
+        self.updateInterval = 1     # time between grabs at new data (s)
+        self.readSampleRate = 25    # frequency to take wave measurements (Hz)
+        self.writeSampleRate = 100  # frequency to send motor commands (Hz)
+        self.readBufferDuration = 30                               # store this many seconds worth of data from wave gauges
+
+        self.read = FlowManager(self.updateInterval, self.readSampleRate, 4)
+        self.write = FlowManager(self.updateInterval, self.writeSampleRate, 1)
+
+r = wrp()
+print(r.write.time)
