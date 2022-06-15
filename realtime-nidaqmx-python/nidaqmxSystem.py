@@ -1,1 +1,0 @@
-from nidaqmx.tests.fixtures import x_series_device
