@@ -7,10 +7,11 @@ import time
 
 
 class WaveGauges:
-    '''
-        A class to hold all wave gauges and their pertinent information
+    ''' A class to hold all wave gauges and their pertinent information
     '''
     def __init__(self):
+        """Set up lists for pertinent wave gauge information
+        """
         self.xPositions = []
         self.calibrationSlopes = []
         self.portNames = []
@@ -54,6 +55,8 @@ class wrpParams:
 
 
 class DataManager:
+    """Facilitates data flows to and from WRP logic
+    """
     def __init__(self, pram, gauges, readSampleRate, writeSampleRate, updateInterval):
         
         self.readSampleRate = readSampleRate    # frequency to take wave measurements (Hz)
@@ -105,8 +108,7 @@ class DataManager:
 
  
     def addUpdateInterval(self):
-        '''
-            Initialize read and write - samples, values, time - based on update interval
+        '''Initialize read and write - samples, values, time - based on update interval
             
             Also allows the user to change the duration of the updateInterval,
             which in practice should also be the same length as the prediction zone
